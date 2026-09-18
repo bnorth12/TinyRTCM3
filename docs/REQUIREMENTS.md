@@ -30,3 +30,7 @@ via `Capability.reqIds`. Do not add a capability without requirements.
 
 Shall-statements live in `kRequirements[]` (not duplicated here). When implementing:
 update `met` / `implemented`, extend `runSelfTests`, goldens, and ICD together.
+
+## Execution
+
+Milestone sequencing and exit criteria: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).

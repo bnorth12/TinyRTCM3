@@ -7,6 +7,8 @@ This library is **not** a Quectel config driver — keep that in [LC29H_GNSS-Lib
 
 **Optional peer:** usable with [LC29H_GNSS](https://github.com/bnorth12/LC29H_GNSS-Library), never required by it.
 
+**Plan:** [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
+
 **Contracts:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (ownership) · [docs/INTEGRATION.md](docs/INTEGRATION.md) (phased app/GNSS impact) · [docs/ICD.md](docs/ICD.md).
 
 ## Status (v0.1.0 scaffold)

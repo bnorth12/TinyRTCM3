@@ -161,6 +161,8 @@ Each vertical step is independently optional except Assembler/CRC for framing.
 
 ## 6. Related docs
 
+- [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) — milestone / REQ execution plan
+
 - [ICD.md](ICD.md) — CAP/REQ catalog and API surface
 - [INTEGRATION.md](INTEGRATION.md) — **scope of change** vs LC29H_GNSS / apps (phased)
 - [RTCM_CAPTURE_EVAL.md](RTCM_CAPTURE_EVAL.md) — which field goldens back the contracts
