@@ -1,4 +1,4 @@
-# Architecture & contracts (v0.2)
+# Architecture & contracts (v0.3)
 
 Normative API shalls still live in `src/TinyRtcmRequirements.h` and [ICD.md](ICD.md).
 This document locks **layer ownership** and **integration contracts** so firmware,
@@ -88,7 +88,78 @@ Helpers: `FrameAssembler`, `frameCrcOk`, `messageType`, Policy MSM/station predi
 
 NMEA remains a **separate** identification path (`$` + checksum). Do not overload TinyRTCM3 for NMEA.
 
-## 5. Related docs
+
+## 5. Adding a message type (modular extension)
+
+New RTCM message support must be **additive**. Framing, Hub, and CRC stay
+type-agnostic; codecs and registry rows are optional modules. Unknown types
+remain valid passthrough (`Unsupported` from Registry does **not** abort the stream —
+REQ-REG-02).
+
+### 5.1 Design rule
+
+**Passthrough + filter first; decode only what the product needs.**
+
+Apps may emit or forward frames they never decode. Implementing `decodeNNNN` is
+never a requirement for Hub to carry that type.
+
+### 5.2 Stable core (do not change for a new type)
+
+| Piece | Why it stays put |
+|-------|------------------|
+| `FrameAssembler` / CRC-24Q | Transport only; no DF002 switch |
+| `Hub::feed` / `Emit` / status meanings | Complete frame in/out; type is metadata |
+| Default passthrough | No handler required for a type to flow |
+
+### 5.3 Extension checklist (per message or family)
+
+1. **Identify DF002** — document the message number(s) (e.g. 1019, 1006, 1077).
+2. **Policy (optional)** — extend or add a predicate only if filters should treat
+   the type specially (station identity, MSM range, ephemeris, …). Prefer ranges
+   (as MSM `1071–1127`) over long `switch` lists when a family shares fate.
+3. **Registry (optional)** — append a `{messageType, handler}` row for apps that
+   want dispatch; leave unregistered → `Unsupported`, stream continues.
+4. **Codec (optional)** — add `decodeNNNN` / `encodeNNNN` (and structs) under a
+   new or existing CAP/REQ in `TinyRtcmRequirements.h` + [ICD.md](ICD.md). Stub
+   with `Status::Unsupported` until goldens exist.
+5. **Goldens** — synthetic and/or sanitized field fixtures; CI only for types
+   marked implemented.
+6. **Privacy** — if the payload can carry ARP/location/descriptors, wire Sanitize
+   before any public emit or published golden.
+7. **Docs** — note the CAP in ICD; update capture eval if LC29H can/cannot TX it.
+
+### 5.4 What must *not* happen when extending
+
+- Putting UART / Quectel PAIR/PQTM into a codec module
+- Making Hub require a registered handler for every observed type
+- A mandatory `decodeAll()` that every application must link
+- Changing `feed()` frame layout or existing Status meanings to “fit” a new type
+- Breaking optional-peer rules (LC29H_GNSS must not gain a required dependency)
+
+### 5.5 Worked examples
+
+| Goal | Touch | Leave alone |
+|------|-------|-------------|
+| Carry MSM7 for rover RTK | Policy keep-MSM (already in range); Hub passthrough | Full MSM cell decode |
+| Station ARP for UI / sanitize | CAP-CODEC-1005 decode + Sanitize | Hub API |
+| DePIN needs 1006/1033 | Synthetic encode CAP + goldens (LC29H may not TX) | Assembler |
+| Ephemeris if UART ever yields it | New CAP-CODEC-eph + registry rows | Forcing decode on all apps |
+
+### 5.6 Layering summary
+
+```
+bytes -> Assembler/CRC -> Hub (filter/emit) -> app sink
+                              |
+                         Registry (optional dispatch)
+                              |
+                         Codec (optional decode/encode)
+                              |
+                         Sanitize (optional, before public)
+```
+
+Each vertical step is independently optional except Assembler/CRC for framing.
+
+## 6. Related docs
 
 - [ICD.md](ICD.md) — CAP/REQ catalog and API surface
 - [INTEGRATION.md](INTEGRATION.md) — **scope of change** vs LC29H_GNSS / apps (phased)

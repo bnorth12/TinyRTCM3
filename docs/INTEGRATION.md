@@ -115,3 +115,4 @@ Phases B–D below never change this rule: even after pump cutover in an **app**
 - Message differentiation -> **RTCM self-describing framing**; library helpers identify types
 - NMEA -> **separate path**
 - Integration -> **phased**; TinyRTCM3 library work precedes disruptive GNSS app changes
+- Message-type growth -> additive Codec/Registry/Policy only; see ARCHITECTURE.md §5 (passthrough first, decode optional)
