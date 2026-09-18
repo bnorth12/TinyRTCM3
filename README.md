@@ -63,3 +63,10 @@ int failed = tinyrtcm3::runSelfTests(&report);  // 0 = ok
 `
 
 Host: 	est/host/test_self_tests.cpp (GitHub Actions host-verify). Device: examples/SelfTest.
+
+## ICD / requirements
+
+- [docs/ICD.md](docs/ICD.md) — proposed functional scope and interfaces
+- [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) — capability → requirement map
+- `src/TinyRtcmRequirements.h` — normative CAP/REQ catalogs for CI and self-test
+

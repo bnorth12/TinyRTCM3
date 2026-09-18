@@ -53,4 +53,13 @@ kPublishStationId	LITERAL1
 runSelfTests	KEYWORD2
 VerifyReport	KEYWORD1
 Requirement	KEYWORD1
+MessageRegistry	KEYWORD1
+StreamStats	KEYWORD1
+SanitizeAction	KEYWORD2
+INtripSink	KEYWORD1
+Capability	KEYWORD1
+Msg1006	KEYWORD1
+rewrite1005ToPublishIdentity	KEYWORD2
+getBits	KEYWORD2
+sanitizeClassify	KEYWORD2
 

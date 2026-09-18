@@ -1,4 +1,4 @@
-﻿# QGNSS base capture plan (intentional goldens)
+# QGNSS base capture plan (intentional goldens)
 
 Goal: collect **known message sets** for soak tests. **CI contract remains synthetic.** Field captures are optional and must be **location-sanitized** before any public commit (see [PRIVACY.md](PRIVACY.md)).
 

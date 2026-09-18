@@ -1,4 +1,4 @@
-﻿# Privacy: location & identity in RTCM goldens
+# Privacy: location & identity in RTCM goldens
 
 ## Why this matters
 

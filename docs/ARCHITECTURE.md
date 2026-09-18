@@ -18,3 +18,7 @@ UART bytes → FrameAssembler (CRC-24Q) → Hub (filter) → app / NTRIP
 
 Stack with Quectel: **LC29H UART → TinyRTCM3 → app policy → NTRIP**. LC29H library stays config/UART only.
 
+## ICD
+
+Proposed scope, capability↔requirement linkage, and API contracts: [ICD.md](ICD.md). Checklist: [REQUIREMENTS.md](REQUIREMENTS.md) / `src/TinyRtcmRequirements.h`.
+
