@@ -5,7 +5,7 @@
 namespace tinyrtcm3 {
 
 // =============================================================================
-// CAP-STATS — stream counters (STUB)
+// CAP-STATS â€” stream counters (STUB)
 // Requirements: REQ-STAT-01, REQ-STAT-02
 // Intent: field bring-up metrics (CRC health, filter drops, throughput) without
 // pulling in a logging framework. Hub integration TBD; apps may update manually.

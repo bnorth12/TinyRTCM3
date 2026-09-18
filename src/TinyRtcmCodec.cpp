@@ -5,9 +5,6 @@
 namespace tinyrtcm3 {
 namespace {
 
-// RTCM 10403.x 1005 body is 152 bits / 19 bytes:
-// DF002 12, DF003 12, DF021 6, DF022/023/024/141 (1 each), DF025 38,
-// DF142 1, DF001 1, DF026 38, DF364 2, DF027 38.
 static constexpr size_t kMsg1005PayloadBytes = 19;
 static constexpr uint16_t kMsg1005Type = 1005;
 
@@ -25,6 +22,13 @@ Status getBits38Signed(BitBuffer& bb, int64_t* out) {
     *out = static_cast<int64_t>(raw);
   }
   return Status::Ok;
+}
+
+Status putBits38Signed(BitBuffer& bb, int64_t v) {
+  const uint64_t u = static_cast<uint64_t>(v) & ((1ULL << 38) - 1ULL);
+  Status st = bb.putBits(static_cast<uint32_t>(u >> 32), 6);
+  if (st != Status::Ok) return st;
+  return bb.putBits(static_cast<uint32_t>(u), 32);
 }
 
 }  // namespace
@@ -53,9 +57,9 @@ Status decode1005(const uint8_t* frame, size_t len, Msg1005* out) {
   if (msg != kMsg1005Type) return Status::InvalidArg;
   st = bb.getBits(12, &station);
   if (st != Status::Ok) return st;
-  st = bb.getBits(6, &skip);  // DF021 ITRF year
+  st = bb.getBits(6, &skip);
   if (st != Status::Ok) return st;
-  st = bb.getBits(4, &skip);  // GPS / GLO / GAL / ref-station
+  st = bb.getBits(4, &skip);
   if (st != Status::Ok) return st;
 
   int64_t x = 0;
@@ -63,13 +67,13 @@ Status decode1005(const uint8_t* frame, size_t len, Msg1005* out) {
   int64_t z = 0;
   st = getBits38Signed(bb, &x);
   if (st != Status::Ok) return st;
-  st = bb.getBits(1, &skip);  // DF142 oscillator
+  st = bb.getBits(1, &skip);
   if (st != Status::Ok) return st;
-  st = bb.getBits(1, &skip);  // DF001 reserved
+  st = bb.getBits(1, &skip);
   if (st != Status::Ok) return st;
   st = getBits38Signed(bb, &y);
   if (st != Status::Ok) return st;
-  st = bb.getBits(2, &skip);  // DF364 quarter-cycle / reserved
+  st = bb.getBits(2, &skip);
   if (st != Status::Ok) return st;
   st = getBits38Signed(bb, &z);
   if (st != Status::Ok) return st;
@@ -81,10 +85,53 @@ Status decode1005(const uint8_t* frame, size_t len, Msg1005* out) {
   return Status::Ok;
 }
 
-Status encode1005(const Msg1005&, uint8_t*, size_t, size_t*) { return Status::Unsupported; }
-Status rewrite1005ToPublishIdentity(const uint8_t*, size_t, uint8_t*, size_t, size_t*) {
-  return Status::Unsupported;
+Status encode1005(const Msg1005& msg, uint8_t* out, size_t cap, size_t* outLen) {
+  if (out == nullptr || outLen == nullptr) return Status::InvalidArg;
+  uint8_t payload[kMsg1005PayloadBytes] = {};
+  BitBuffer bb(payload, sizeof(payload));
+  bb.resetWrite();
+  Status st = bb.putBits(kMsg1005Type, 12);
+  if (st != Status::Ok) return st;
+  st = bb.putBits(msg.stationId, 12);
+  if (st != Status::Ok) return st;
+  st = bb.putBits(0, 6);  // DF021 ITRF year
+  if (st != Status::Ok) return st;
+  st = bb.putBits(1, 1);  // DF022 GPS
+  if (st != Status::Ok) return st;
+  st = bb.putBits(0, 1);  // GLONASS
+  if (st != Status::Ok) return st;
+  st = bb.putBits(0, 1);  // Galileo
+  if (st != Status::Ok) return st;
+  st = bb.putBits(0, 1);  // ref-station
+  if (st != Status::Ok) return st;
+  st = putBits38Signed(bb, msg.ecefX01mm);
+  if (st != Status::Ok) return st;
+  st = bb.putBits(0, 1);  // oscillator
+  if (st != Status::Ok) return st;
+  st = bb.putBits(0, 1);  // reserved
+  if (st != Status::Ok) return st;
+  st = putBits38Signed(bb, msg.ecefY01mm);
+  if (st != Status::Ok) return st;
+  st = bb.putBits(0, 2);  // DF364
+  if (st != Status::Ok) return st;
+  st = putBits38Signed(bb, msg.ecefZ01mm);
+  if (st != Status::Ok) return st;
+  if (bb.bitLength() != 152) return Status::Overflow;
+  return finalizeFrame(payload, sizeof(payload), out, cap, outLen);
 }
+
+Status rewrite1005ToPublishIdentity(const uint8_t* in, size_t inLen, uint8_t* out, size_t cap,
+                                    size_t* outLen) {
+  Msg1005 msg;
+  const Status st = decode1005(in, inLen, &msg);
+  if (st != Status::Ok) return st;
+  msg.stationId = kPublishStationId;
+  msg.ecefX01mm = kPublishArpEcef01mmX;
+  msg.ecefY01mm = kPublishArpEcef01mmY;
+  msg.ecefZ01mm = kPublishArpEcef01mmZ;
+  return encode1005(msg, out, cap, outLen);
+}
+
 Status decode1006(const uint8_t*, size_t, Msg1006*) { return Status::Unsupported; }
 Status encode1006(const Msg1006&, uint8_t*, size_t, size_t*) { return Status::Unsupported; }
 Status decode1033(const uint8_t*, size_t, Msg1033*) { return Status::Unsupported; }

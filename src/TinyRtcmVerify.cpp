@@ -5,6 +5,9 @@
 #include "TinyRtcmBitBuffer.h"
 #include "TinyRtcmCodec.h"
 #include "TinyRtcmSanitize.h"
+#include "TinyRtcmPolicy.h"
+#include "TinyRtcmRegistry.h"
+#include "TinyRtcmStats.h"
 
 namespace tinyrtcm3 {
 namespace {
@@ -145,24 +148,86 @@ int runSelfTests(VerifyReport* report, VerifyLogFn log, void* user) {
     else fail(r, log, user, "FAIL REQ-COD-1005-D decode dummy ARP");
   }
 
-  // Remaining codec + sanitize stubs expected Unsupported (REQ-VER-02)
+  // v0.2: encode1005 + rewrite + sanitize 1005
   {
-    Msg1005 m5;
+    Msg1005 m;
+    m.stationId = 42;
+    m.ecefX01mm = kPublishArpEcef01mmX;
+    m.ecefY01mm = -1;
+    m.ecefZ01mm = kPublishArpEcef01mmZ;
+    uint8_t frame[64];
+    size_t n = 0;
+    Msg1005 back;
+    bool ok = encode1005(m, frame, sizeof(frame), &n) == Status::Ok && n >= 6 &&
+              decode1005(frame, n, &back) == Status::Ok && back.stationId == 42 &&
+              back.ecefX01mm == m.ecefX01mm && back.ecefY01mm == -1 &&
+              back.ecefZ01mm == m.ecefZ01mm;
+    if (ok) pass(r, log, user, "ok REQ-COD-1005-E encode/decode round-trip");
+    else fail(r, log, user, "FAIL REQ-COD-1005-E encode/decode round-trip");
+
+    Msg1005 dirty = m;
+    dirty.stationId = 99;
+    dirty.ecefX01mm = 123456789LL;
+    ok = encode1005(dirty, frame, sizeof(frame), &n) == Status::Ok;
+    uint8_t out[64];
+    size_t on = 0;
+    Msg1005 pub;
+    ok = ok && rewrite1005ToPublishIdentity(frame, n, out, sizeof(out), &on) == Status::Ok &&
+         decode1005(out, on, &pub) == Status::Ok && pub.stationId == kPublishStationId &&
+         pub.ecefX01mm == kPublishArpEcef01mmX && pub.ecefY01mm == kPublishArpEcef01mmY &&
+         pub.ecefZ01mm == kPublishArpEcef01mmZ;
+    if (ok) pass(r, log, user, "ok REQ-COD-1005-R rewrite to publish identity");
+    else fail(r, log, user, "FAIL REQ-COD-1005-R rewrite to publish identity");
+
+    size_t sn = 0;
+    ok = sanitizeRewriteLocationFrame(frame, n, sizeof(frame), &sn) == Status::Ok &&
+         decode1005(frame, sn, &pub) == Status::Ok && pub.stationId == kPublishStationId;
+    if (ok) pass(r, log, user, "ok REQ-SAN-02 sanitize rewrite 1005");
+    else fail(r, log, user, "FAIL REQ-SAN-02 sanitize rewrite 1005");
+  }
+
+  // Policy + registry + stats smoke
+  {
+    const bool pol = policyIsStationIdentityType(1005) && policyIsMsmType(1077) &&
+                     policyFilterKeepStationAndMsm(1005, nullptr, 0, nullptr) &&
+                     !policyFilterDropMsm(1077, nullptr, 0, nullptr);
+    if (pol) pass(r, log, user, "ok CAP-POLICY stock predicates");
+    else fail(r, log, user, "FAIL CAP-POLICY stock predicates");
+
+    MessageRegistry reg;
+    const RegistryEntry table[] = {{1005, nullptr}};
+    reg.setTable(table, 1);
+    const bool regOk = reg.dispatch(9999, nullptr, 0, nullptr) == Status::Unsupported;
+    if (regOk) pass(r, log, user, "ok CAP-REGISTRY unknown -> Unsupported");
+    else fail(r, log, user, "FAIL CAP-REGISTRY unknown");
+
+    StreamStats s;
+    statsOnByte(&s);
+    statsOnByte(&s);
+    statsOnStatus(&s, Status::Ok, false);
+    statsOnStatus(&s, Status::Ok, true);
+    statsOnStatus(&s, Status::BadCrc, false);
+    const bool stOk = s.bytesIn == 2 && s.framesOk == 1 && s.framesDroppedByFilter == 1 &&
+                      s.framesBadCrc == 1;
+    statsReset(&s);
+    const bool resetOk = s.bytesIn == 0 && s.framesOk == 0;
+    if (stOk && resetOk) pass(r, log, user, "ok CAP-STATS counters + reset");
+    else fail(r, log, user, "FAIL CAP-STATS");
+  }
+
+  // Remaining codec stubs expected Unsupported (REQ-VER-02)
+  {
     Msg1006 m6;
     Msg1033 m3;
     MsmHeaderCnrSummary msm;
     uint8_t buf[64];
     size_t n = 0;
-    const bool stubs =
-        encode1005(m5, buf, sizeof(buf), &n) == Status::Unsupported &&
-        rewrite1005ToPublishIdentity(buf, 0, buf, sizeof(buf), &n) == Status::Unsupported &&
-        decode1006(buf, 0, &m6) == Status::Unsupported &&
-        encode1006(m6, buf, sizeof(buf), &n) == Status::Unsupported &&
-        decode1033(buf, 0, &m3) == Status::Unsupported &&
-        encode1033(m3, buf, sizeof(buf), &n) == Status::Unsupported &&
-        summarizeMsmCnr(buf, 0, &msm) == Status::Unsupported &&
-        sanitizeRewriteLocationFrame(buf, 0, sizeof(buf), &n) == Status::Unsupported;
-    if (stubs) skip(r, log, user, "skip remaining CAP-CODEC-* / sanitize rewrite (Unsupported)");
+    const bool stubs = decode1006(buf, 0, &m6) == Status::Unsupported &&
+                       encode1006(m6, buf, sizeof(buf), &n) == Status::Unsupported &&
+                       decode1033(buf, 0, &m3) == Status::Unsupported &&
+                       encode1033(m3, buf, sizeof(buf), &n) == Status::Unsupported &&
+                       summarizeMsmCnr(buf, 0, &msm) == Status::Unsupported;
+    if (stubs) skip(r, log, user, "skip CAP-CODEC-1006/1033/MSM (Unsupported)");
     else fail(r, log, user, "FAIL expected Unsupported stubs");
   }
 

@@ -6,7 +6,7 @@
 namespace tinyrtcm3 {
 
 // =============================================================================
-// CAP-REGISTRY — message-type dispatch (STUB)
+// CAP-REGISTRY â€” message-type dispatch (STUB)
 // Requirements: REQ-REG-01, REQ-REG-02
 // Intent: map DF002 message type to a handler without forcing apps into a
 // giant switch. v0.1 provides the types and a no-op registry that always

@@ -85,31 +85,26 @@ static constexpr Requirement kRequirements[] = {
 
     // Policy helpers
     {"REQ-POL-01",
-     "The library shall provide stock filter helpers (e.g. ISO-only, drop-MSM).", false,
-     "stub"},
+     "The library shall provide stock filter helpers (e.g. ISO-only, drop-MSM).", true, nullptr},
     {"REQ-POL-02",
-     "Stock filters shall be pure predicates usable with Hub::setFilter.", false, "stub"},
+     "Stock filters shall be pure predicates usable with Hub::setFilter.", true, nullptr},
 
     // Registry
     {"REQ-REG-01",
-     "The library shall provide a message-type registry for dispatch by DF002 type.", false,
-     "stub"},
+     "The library shall provide a message-type registry for dispatch by DF002 type.", true, nullptr},
     {"REQ-REG-02",
-     "Unregistered types shall be reportable as Unsupported without aborting the stream.",
-     false, "stub"},
+     "Unregistered types shall be reportable as Unsupported without aborting the stream.", true, nullptr},
 
     // Stats
     {"REQ-STAT-01",
-     "The library shall count frames OK, BadCrc, filter drops, and bytes in.", false,
-     "stub"},
+     "The library shall count frames OK, BadCrc, filter drops, and bytes in.", true, nullptr},
     {"REQ-STAT-02",
-     "Stream stats shall be resettable without affecting assembler state.", false, "stub"},
+     "Stream stats shall be resettable without affecting assembler state.", true, nullptr},
 
     // Codec 1005/1006/1033/MSM
     {"REQ-COD-1005-D", "The library shall decode RTCM 1005 ARP fields into Msg1005.", true,
      nullptr},
-    {"REQ-COD-1005-E", "The library shall encode Msg1005 into a CRC-valid 1005 frame.", false,
-     "Unsupported stub"},
+    {"REQ-COD-1005-E", "The library shall encode Msg1005 into a CRC-valid 1005 frame.", true, nullptr},
     {"REQ-COD-1006-D", "The library shall decode RTCM 1006 (ARP + antenna height).", false,
      "Unsupported stub"},
     {"REQ-COD-1006-E", "The library shall encode Msg1006 from ECEF + antenna height.", false,
@@ -119,8 +114,7 @@ static constexpr Requirement kRequirements[] = {
     {"REQ-COD-1033-E", "The library shall encode Msg1033 into a CRC-valid 1033 frame.", false,
      "Unsupported stub"},
     {"REQ-COD-1005-R",
-     "The library shall rewrite 1005 station id and ARP to published dummy constants.", false,
-     "needs encode1005"},
+     "The library shall rewrite 1005 station id and ARP to published dummy constants.", true, nullptr},
     {"REQ-COD-MSM-S",
      "The library shall summarize MSM4/7 headers and mean CNR without full obs cells.", false,
      "Unsupported stub"},
@@ -133,8 +127,7 @@ static constexpr Requirement kRequirements[] = {
      "Public field goldens shall never contain unsanitized real ARP or 1033 strings.", true,
      "process + gitignore + sanitizer script"},
     {"REQ-SAN-02",
-     "C++ sanitize API shall drop or rewrite location messages before public export.", false,
-     "drop stub; rewrite waits encode1005"},
+     "C++ sanitize API shall drop or rewrite location messages before public export.", true, "1005 rewrite; drop 1006/1033 until encode"},
 
     // Goldens / verify
     {"REQ-GOLD-01", "CI shall treat synthetic goldens as the merge contract.", true, nullptr},
@@ -218,16 +211,15 @@ static constexpr Capability kCapabilities[] = {
      kReqIds_Hub, nullptr},
     {"CAP-POLICY", "Stock policy filters",
      "Reusable predicates (ISO-only, drop MSM, allowlist) so apps do not reinvent filters.",
-     false, kReqIds_Policy, "Stubs only in v0.1"},
+     true, kReqIds_Policy, nullptr},
     {"CAP-REGISTRY", "Message registry",
-     "Map DF002 message type to decode/summarize handlers without switch soup in apps.", false,
-     kReqIds_Registry, "Stubs only in v0.1"},
+     "Map DF002 message type to decode/summarize handlers without switch soup in apps.", true,
+     kReqIds_Registry, nullptr},
     {"CAP-STATS", "Stream statistics",
-     "Lightweight counters for field bring-up and soak (CRC fails, drops, throughput).", false,
-     kReqIds_Stats, "Stubs only in v0.1"},
+     "Lightweight counters for field bring-up and soak (CRC fails, drops, throughput).", true,
+     kReqIds_Stats, nullptr},
     {"CAP-CODEC-1005", "RTCM 1005 codec",
-     "Station ARP decode/encode and privacy rewrite for public goldens / NTRIP identity.",
-     false, kReqIds_Codec1005, "decode1005 met; encode/rewrite still Unsupported (v0.2)"},
+     "Station ARP decode/encode and privacy rewrite for public goldens / NTRIP identity.", true, kReqIds_Codec1005, "decode/encode/rewrite 1005 met"},
     {"CAP-CODEC-1006", "RTCM 1006 codec",
      "ARP + antenna height; optional companion to 1005 for survey-style bases.", false,
      kReqIds_Codec1006, "Stubs return Unsupported"},
@@ -238,8 +230,8 @@ static constexpr Capability kCapabilities[] = {
      "Quality glance at MSM4/7 without storing full observation cells (v1 non-goal: encode MSM).",
      false, kReqIds_CodecMsm, "Summarize stub; encode MSM explicitly out of scope"},
     {"CAP-SANITIZE", "Location sanitization",
-     "Keep real farm/shop ECEF and 1033 strings out of public artifacts.", false, kReqIds_Sanitize,
-     "Process REQ met; C++ rewrite API stub"},
+     "Keep real farm/shop ECEF and 1033 strings out of public artifacts.", true, kReqIds_Sanitize,
+     "1005 rewrite; drop 1006/1033"},
     {"CAP-GOLDENS", "Golden corpora",
      "Synthetic CI contract + optional sanitized field soak.", true, kReqIds_Goldens, nullptr},
     {"CAP-SELFTEST", "In-library self-test",
@@ -274,14 +266,14 @@ static constexpr bool kCapFrameAssembler = true;
 static constexpr bool kCapBitWrite = true;
 static constexpr bool kCapBitRead = true;
 static constexpr bool kCapHub = true;
-static constexpr bool kCapPolicy = false;
-static constexpr bool kCapRegistry = false;
-static constexpr bool kCapStats = false;
-static constexpr bool kCapCodec1005 = false;
+static constexpr bool kCapPolicy = true;
+static constexpr bool kCapRegistry = true;
+static constexpr bool kCapStats = true;
+static constexpr bool kCapCodec1005 = true;
 static constexpr bool kCapCodec1006 = false;
 static constexpr bool kCapCodec1033 = false;
 static constexpr bool kCapCodecMsm = false;
-static constexpr bool kCapSanitize = false;
+static constexpr bool kCapSanitize = true;
 static constexpr bool kCapGoldens = true;
 static constexpr bool kCapSelfTest = true;
 
