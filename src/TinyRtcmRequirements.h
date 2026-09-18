@@ -116,7 +116,7 @@ static constexpr Requirement kRequirements[] = {
     {"REQ-COD-1005-R",
      "The library shall rewrite 1005 station id and ARP to published dummy constants.", true, nullptr},
     {"REQ-COD-MSM-S",
-     "The library shall summarize MSM4/7 headers and mean CNR without full obs cells.", false,
+     "The library shall summarize MSM4/7 headers and mean CNR without full obs cells.", true,
      "Unsupported stub"},
     {"REQ-COD-MSM-X",
      "The library shall NOT encode MSM or 1230 in v1 (non-goal).", true,
@@ -228,7 +228,7 @@ static constexpr Capability kCapabilities[] = {
      true, kReqIds_Codec1033, "encode/decode + sanitized synthetic golden"},
     {"CAP-CODEC-MSM", "MSM header+CNR summary",
      "Quality glance at MSM4/7 without storing full observation cells (v1 non-goal: encode MSM).",
-     false, kReqIds_CodecMsm, "Summarize stub; encode MSM explicitly out of scope"},
+     true, kReqIds_CodecMsm, "MSM4/7 header+mean CNR; encode MSM out of scope"},
     {"CAP-SANITIZE", "Location sanitization",
      "Keep real farm/shop ECEF and 1033 strings out of public artifacts.", true, kReqIds_Sanitize,
      "1005/1006 rewrite; 1033 sanitized descriptors"},
@@ -272,7 +272,7 @@ static constexpr bool kCapStats = true;
 static constexpr bool kCapCodec1005 = true;
 static constexpr bool kCapCodec1006 = true;
 static constexpr bool kCapCodec1033 = true;
-static constexpr bool kCapCodecMsm = false;
+static constexpr bool kCapCodecMsm = true;
 static constexpr bool kCapSanitize = true;
 static constexpr bool kCapGoldens = true;
 static constexpr bool kCapSelfTest = true;

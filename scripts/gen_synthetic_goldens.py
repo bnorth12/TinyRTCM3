@@ -128,6 +128,25 @@ def make_1033() -> bytes:
     return wrap_frame(payload)
 
 
+def make_msm4_cnr() -> bytes:
+    """Minimal GPS MSM4: 2 sats / 2 sigs / 3 cells; CNRs 40,50,45 -> mean 450 (0.1 dB-Hz)."""
+    w = BitWriter()
+    w.put(1074, 12)
+    w.put(PUBLISH_STATION_ID, 12)
+    w.put(0, 30)
+    w.put(0, 1 + 3 + 7 + 2 + 2 + 1 + 3)
+    w.put((1 << 63) | (1 << 62), 64)
+    w.put((1 << 31) | (1 << 30), 32)
+    w.put(0b1101, 4)
+    for _ in range(2):
+        w.put(0, 8)
+        w.put(0, 10)
+    for cnr in (40, 50, 45):
+        w.put(0, 15 + 22 + 4 + 1)
+        w.put(cnr, 6)
+    return wrap_frame(w.to_bytes())
+
+
 def msg_type(frame: bytes) -> int:
     return (frame[3] << 4) | (frame[4] >> 4)
 
@@ -141,16 +160,18 @@ def main() -> None:
     f1005 = make_1005()
     f1006 = make_1006()
     f1033 = make_1033()
+    fmsm4 = make_msm4_cnr()
 
     frames = {
         "empty.bin": empty,
         "1005_dummy_arp.bin": f1005,
         "1006_dummy_arp.bin": f1006,
         "1033_sanitized.bin": f1033,
+        "msm4_cnr_mean.bin": fmsm4,
     }
     manifest = {
-        "version": 2,
-        "note": "synthetic CI contract; 1005/1006 dummy ARP; 1033 sanitized descriptors",
+        "version": 3,
+        "note": "synthetic CI contract; 1005/1006 dummy ARP; 1033 sanitized; MSM4 CNR mean",
         "frames": {},
     }
     for name, blob in frames.items():
@@ -172,6 +193,10 @@ def main() -> None:
         if "1033" in name:
             entry["antenna_descriptor"] = PUBLISH_ANT_DESC
             entry["receiver_descriptor"] = PUBLISH_RX_DESC
+        if "msm4_cnr" in name:
+            entry["expected_mean_cnr_01dbhz"] = 450
+            entry["sat_count"] = 2
+            entry["sig_count"] = 2
         manifest["frames"][name] = entry
 
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

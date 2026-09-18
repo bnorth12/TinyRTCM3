@@ -1,4 +1,4 @@
-﻿# Field goldens (optional soak)
+# Field goldens
 
-Nothing here until a sanitizer run produces anonymous frames.
-See docs/PRIVACY.md and docs/CAPTURE.md.
+MSM samples extracted from local raw/ captures. MSM payloads contain no ARP ECEF;
+safe for CI. Do not add unsanitized 1005/1006/1033 frames here.

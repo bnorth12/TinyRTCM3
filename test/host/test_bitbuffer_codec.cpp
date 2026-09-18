@@ -195,5 +195,51 @@ int main() {
            "1033 rx RCV");
   }
 
+
+  // --- v0.4 MSM summary ---
+  {
+    uint8_t buf[256];
+    size_t n = 0;
+    expect(findGolden("msm4_cnr_mean.bin", buf, sizeof(buf), &n) != nullptr,
+           "load msm4_cnr_mean.bin");
+    expect(frameCrcOk(buf, n), "msm4 synthetic CRC");
+    MsmHeaderCnrSummary s;
+    expect(summarizeMsmCnr(buf, n, &s) == Status::Ok, "summarize synthetic MSM4");
+    expect(s.messageType == 1074, "msm type 1074");
+    expect(s.satCount == 2 && s.sigCount == 2, "msm sat/sig counts");
+    expect(s.meanCnr01dBHz == 450, "msm mean CNR 450");
+
+    // Field samples (optional paths)
+    static const char* kFieldRoots[] = {
+        "test/golden/field/",
+        "../test/golden/field/",
+        "../../test/golden/field/",
+        "golden/field/",
+    };
+    auto loadField = [&](const char* name) -> bool {
+      char path[256];
+      for (const char* root : kFieldRoots) {
+        std::snprintf(path, sizeof(path), "%s%s", root, name);
+        if (readAll(path, buf, sizeof(buf), &n)) return true;
+      }
+      return false;
+    };
+    if (loadField("msm4_1074_sample.bin")) {
+      expect(frameCrcOk(buf, n), "field msm4 CRC");
+      expect(summarizeMsmCnr(buf, n, &s) == Status::Ok, "summarize field msm4");
+      expect(s.messageType == 1074 && s.satCount > 0, "field msm4 header");
+      expect(s.meanCnr01dBHz != 0xFFFF, "field msm4 has CNR");
+    } else {
+      std::printf("skip: field msm4_1074_sample.bin not present\n");
+    }
+    if (loadField("msm7_1077_sample.bin")) {
+      expect(frameCrcOk(buf, n), "field msm7 CRC");
+      expect(summarizeMsmCnr(buf, n, &s) == Status::Ok, "summarize field msm7");
+      expect(s.messageType == 1077 && s.satCount > 0, "field msm7 header");
+    } else {
+      std::printf("skip: field msm7_1077_sample.bin not present\n");
+    }
+  }
+
   return fails ? 1 : 0;
 }

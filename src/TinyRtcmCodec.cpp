@@ -324,8 +324,116 @@ Status decode1033(const uint8_t* frame, size_t len, Msg1033* out) {
   for (size_t i = 0; i < sizeof(out->receiverDescriptor); ++i) out->receiverDescriptor[i] = rx[i];
   return Status::Ok;
 }
-Status summarizeMsmCnr(const uint8_t*, size_t, MsmHeaderCnrSummary*) {
-  return Status::Unsupported;
+Status summarizeMsmCnr(const uint8_t* frame, size_t len, MsmHeaderCnrSummary* out) {
+  if (frame == nullptr || out == nullptr) return Status::InvalidArg;
+  if (len < kRtcmMinFrameLen || frame[0] != 0xD3) return Status::InvalidArg;
+  const size_t payloadLen =
+      (static_cast<size_t>(frame[1] & 0x03u) << 8) | static_cast<size_t>(frame[2]);
+  if (len != payloadLen + 6u) return Status::InvalidArg;
+  if (!frameCrcOk(frame, len)) return Status::BadCrc;
+  const uint16_t mt = messageType(frame, len);
+  // MSM4 / MSM7 only (x74 / x77) across GNSS bands 1071..1127
+  if (mt < 1071 || mt > 1127) return Status::InvalidArg;
+  const uint8_t msm = static_cast<uint8_t>(mt % 10);
+  if (msm != 4 && msm != 7) return Status::Unsupported;
+
+  if (payloadLen == 0 || payloadLen > 1023) return Status::Overflow;
+  // Payload lives in frame[3..]; BitBuffer needs mutable pointer — copy.
+  uint8_t payload[1023];
+  for (size_t i = 0; i < payloadLen; ++i) payload[i] = frame[3 + i];
+  BitBuffer bb(payload, payloadLen);
+  bb.resetRead();
+
+  uint32_t msg = 0, stn = 0, skip = 0;
+  Status st = bb.getBits(12, &msg);
+  if (st != Status::Ok) return st;
+  if (msg != mt) return Status::InvalidArg;
+  st = bb.getBits(12, &stn);
+  if (st != Status::Ok) return st;
+  // GNSS epoch is 30 bits for all MSM (GLONASS packs DOW+TOD into 30).
+  st = bb.getBits(30, &skip);
+  if (st != Status::Ok) return st;
+  // multiple(1)+IODS(3)+reserved(7)+clock(2)+extClock(2)+divFree(1)+smooth(3) = 19
+  st = bb.getBits(19, &skip);
+  if (st != Status::Ok) return st;
+
+  uint32_t satHi = 0, satLo = 0, sigMask = 0;
+  st = bb.getBits(32, &satHi);
+  if (st != Status::Ok) return st;
+  st = bb.getBits(32, &satLo);
+  if (st != Status::Ok) return st;
+  st = bb.getBits(32, &sigMask);
+  if (st != Status::Ok) return st;
+
+  auto pop32 = [](uint32_t x) -> uint8_t {
+    uint8_t n = 0;
+    while (x) {
+      n = static_cast<uint8_t>(n + (x & 1u));
+      x >>= 1;
+    }
+    return n;
+  };
+  const uint8_t nsat = static_cast<uint8_t>(pop32(satHi) + pop32(satLo));
+  const uint8_t nsig = pop32(sigMask);
+  const uint16_t ncellMax = static_cast<uint16_t>(nsat) * static_cast<uint16_t>(nsig);
+  if (ncellMax > 64 * 32) return Status::Overflow;
+
+  uint16_t ncell = 0;
+  for (uint16_t i = 0; i < ncellMax; ++i) {
+    uint32_t bit = 0;
+    st = bb.getBits(1, &bit);
+    if (st != Status::Ok) return st;
+    if (bit) ++ncell;
+  }
+
+  const uint8_t satBits = (msm == 4) ? 18 : 36;
+  const uint8_t cellBits = (msm == 4) ? 48 : 80;
+  const uint8_t cnrBits = (msm == 4) ? 6 : 10;
+
+  for (uint8_t i = 0; i < nsat; ++i) {
+    // Skip satellite block in chunks of <=32 bits.
+    uint8_t left = satBits;
+    while (left > 0) {
+      const uint8_t n = left > 32 ? 32 : left;
+      st = bb.getBits(n, &skip);
+      if (st != Status::Ok) return st;
+      left = static_cast<uint8_t>(left - n);
+    }
+  }
+
+  uint32_t sum01 = 0;
+  uint16_t counted = 0;
+  for (uint16_t i = 0; i < ncell; ++i) {
+    const uint8_t skipBits = static_cast<uint8_t>(cellBits - cnrBits);
+    uint8_t left = skipBits;
+    while (left > 0) {
+      const uint8_t n = left > 32 ? 32 : left;
+      st = bb.getBits(n, &skip);
+      if (st != Status::Ok) return st;
+      left = static_cast<uint8_t>(left - n);
+    }
+    uint32_t cnr = 0;
+    st = bb.getBits(cnrBits, &cnr);
+    if (st != Status::Ok) return st;
+    if (msm == 4) {
+      sum01 += cnr * 10u;  // 1 dB-Hz -> 0.1 dB-Hz
+    } else {
+      // 0.0625 dB-Hz -> 0.1 dB-Hz: raw * 5 / 8
+      sum01 += (cnr * 5u) / 8u;
+    }
+    ++counted;
+  }
+
+  out->messageType = mt;
+  out->stationId = static_cast<uint16_t>(stn);
+  out->satCount = nsat;
+  out->sigCount = nsig;
+  if (counted == 0) {
+    out->meanCnr01dBHz = 0xFFFF;
+  } else {
+    out->meanCnr01dBHz = static_cast<uint16_t>(sum01 / counted);
+  }
+  return Status::Ok;
 }
 
 }  // namespace tinyrtcm3

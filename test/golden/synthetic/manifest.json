@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "note": "synthetic CI contract; 1005/1006 dummy ARP; 1033 sanitized descriptors",
+  "version": 3,
+  "note": "synthetic CI contract; 1005/1006 dummy ARP; 1033 sanitized; MSM4 CNR mean",
   "frames": {
     "empty.bin": {
       "bytes": 6,
@@ -42,6 +42,15 @@
       "station_policy": "publish_dummy",
       "antenna_descriptor": "ANT",
       "receiver_descriptor": "RCV"
+    },
+    "msm4_cnr_mean.bin": {
+      "bytes": 51,
+      "crc_ok": true,
+      "message_type": 1074,
+      "station_policy": "publish_dummy",
+      "expected_mean_cnr_01dbhz": 450,
+      "sat_count": 2,
+      "sig_count": 2
     }
   }
 }

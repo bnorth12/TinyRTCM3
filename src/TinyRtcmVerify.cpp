@@ -250,11 +250,27 @@ int runSelfTests(VerifyReport* report, VerifyLogFn log, void* user) {
     if (ok) pass(r, log, user, "ok REQ-COD-1033-E/D encode/decode round-trip");
     else fail(r, log, user, "FAIL REQ-COD-1033-E/D encode/decode round-trip");
 
+    // Minimal GPS MSM4: 2 sats, 2 sigs, 3 cells, CNRs 40/50/45 -> mean 450
+    uint8_t msmPayload[64] = {};
+    BitBuffer mb(msmPayload, sizeof(msmPayload));
+    mb.resetWrite();
+    auto putN = [&mb](uint32_t v, uint8_t n) -> bool { return mb.putBits(v, n) == Status::Ok; };
+    bool mok = putN(1074, 12) && putN(0, 12) && putN(0, 30) && putN(0, 19) &&
+               putN(0xC0000000u, 32) && putN(0, 32) && putN(0xC0000000u, 32) &&
+               putN(0xDu, 4) && putN(0, 18) && putN(0, 18);
+    const uint32_t cnrs[3] = {40u, 50u, 45u};
+    for (int ci = 0; ci < 3; ++ci) {
+      mok = mok && putN(0, 32) && putN(0, 10) && putN(cnrs[ci], 6);
+    }
+    uint8_t msmFrame[96];
+    size_t mn = 0;
     MsmHeaderCnrSummary msm;
-    if (summarizeMsmCnr(frame, 0, &msm) == Status::Unsupported)
-      skip(r, log, user, "skip CAP-CODEC-MSM (Unsupported)");
-    else
-      fail(r, log, user, "FAIL expected MSM Unsupported");
+    mok = mok && finalizeFrame(msmPayload, mb.byteLength(), msmFrame, sizeof(msmFrame), &mn) ==
+                     Status::Ok &&
+          summarizeMsmCnr(msmFrame, mn, &msm) == Status::Ok && msm.messageType == 1074 &&
+          msm.satCount == 2 && msm.sigCount == 2 && msm.meanCnr01dBHz == 450;
+    if (mok) pass(r, log, user, "ok REQ-COD-MSM-S MSM4 mean CNR");
+    else fail(r, log, user, "FAIL REQ-COD-MSM-S MSM4 mean CNR");
   }
 
   emit(log, user, "TinyRTCM3 self-test end");

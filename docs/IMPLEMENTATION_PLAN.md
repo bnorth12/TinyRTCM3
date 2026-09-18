@@ -88,6 +88,8 @@ in INTEGRATION and is out of scope for v0.1–v0.3 library milestones unless not
 
 ### v0.4 — Optional diagnostics (schedule after v0.3 or in parallel if staffing allows)
 
+**Status (v0.4):** Done 2026-09-18 — MSM4/7 header + mean CNR; synthetic + field samples.
+
 | Work item | REQs / CAPs | Exit criteria |
 |-----------|-------------|----------------|
 | MSM4/7 header + mean CNR summary | REQ-COD-MSM-S, CAP-CODEC-MSM | Host test on sanitized msm4/msm7 bundles |
