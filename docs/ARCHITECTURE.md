@@ -8,7 +8,7 @@ UART bytes → FrameAssembler (CRC-24Q) → Hub (filter) → app / NTRIP
 
 | Piece | Role | v0.1 status |
 |-------|------|-------------|
-| `TinyRtcmCrc24q` | Transport CRC | Implemented |
+| `TinyRtcmCrc24q` | Transport CRC-24Q compute/verify/**append**/finalizeFrame | Implemented (bit-at-a-time; table accel later) |
 | `FrameAssembler` | Stream → frames | Implemented |
 | `BitBuffer` | MSB bit pack | Stub writer |
 | `Hub` | Filter + emit | Implemented |
@@ -17,3 +17,4 @@ UART bytes → FrameAssembler (CRC-24Q) → Hub (filter) → app / NTRIP
 | Field goldens | Soak only | Sanitized or absent |
 
 Stack with Quectel: **LC29H UART → TinyRTCM3 → app policy → NTRIP**. LC29H library stays config/UART only.
+

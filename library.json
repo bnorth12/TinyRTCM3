@@ -1,7 +1,7 @@
 ﻿{
   "name": "TinyRTCM3",
   "version": "0.1.0",
-  "description": "Compact RTCM 3 frame assemble/CRC/decode/encode for ESP32 RTK pipelines. v0.1: CRC-24Q + assembler + hub implemented; 1005/1033/MSM codec APIs are Unsupported stubs; CI uses synthetic goldens only.",
+  "description": "Compact RTCM 3 frame assemble/CRC/decode/encode for ESP32 RTK pipelines. v0.1: CRC-24Q compute/verify/append/finalizeFrame + assembler + hub; 1005/1033/MSM codec APIs are Unsupported stubs; CI uses synthetic goldens only.",
   "keywords": "rtcm, gnss, rtk, ntrip, crc24q, esp32",
   "repository": {
     "type": "git",
@@ -43,3 +43,4 @@
     }
   ]
 }
+

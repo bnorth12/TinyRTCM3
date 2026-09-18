@@ -1,7 +1,7 @@
 ﻿#######################################
 # Syntax Coloring Map for TinyRTCM3
-# v0.1 STUB: Codec APIs are Unsupported stubs; keyword list will grow with
-# decode1005 / encode1033 / MSM summary and will need a follow-up commit.
+# v0.1: CRC-24Q compute/verify/append/finalize implemented.
+# Codec APIs still Unsupported stubs — keyword list will grow with Codec.
 #######################################
 
 #######################################
@@ -22,6 +22,10 @@ MsmHeaderCnrSummary	KEYWORD1
 #######################################
 crc24q	KEYWORD2
 frameCrcOk	KEYWORD2
+appendCrc24q	KEYWORD2
+finalizeFrame	KEYWORD2
+storeCrc24q	KEYWORD2
+loadCrc24q	KEYWORD2
 messageType	KEYWORD2
 feed	KEYWORD2
 reset	KEYWORD2
@@ -39,6 +43,9 @@ resetWrite	KEYWORD2
 #######################################
 # Constants (LITERAL1)
 #######################################
+kCrc24qPoly	LITERAL1
+kRtcmMinFrameLen	LITERAL1
+kRtcmCrcLen	LITERAL1
 kPublishArpEcef01mmX	LITERAL1
 kPublishArpEcef01mmY	LITERAL1
 kPublishArpEcef01mmZ	LITERAL1
