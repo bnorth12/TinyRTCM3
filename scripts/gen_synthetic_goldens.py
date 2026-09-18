@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Generate synthetic RTCM3 golden frames for CI (no real site coordinates).
 
-v0.1 emits:
+Emits:
   - empty payload frame (CRC smoke)
   - bit-accurate RTCM 1005 using published dummy ECEF (152-bit payload)
+  - RTCM 1006 = 1005 body + 16-bit antenna height (168-bit / 21-byte payload)
+  - RTCM 1033 with sanitized short descriptors (counted strings)
 
 Output: test/golden/synthetic/
 """
@@ -18,9 +20,14 @@ PUBLISH_STATION_ID = 0
 PUBLISH_ECEF_X = 63781370000
 PUBLISH_ECEF_Y = 0
 PUBLISH_ECEF_Z = 0
+# Synthetic antenna height above marker (0.0001 m) — 1.5000 m
+PUBLISH_ANT_HEIGHT = 15000
+# Sanitized public descriptors (never real farm/shop strings)
+PUBLISH_ANT_DESC = "ANT"
+PUBLISH_RX_DESC = "RCV"
 
-# RTCM 10403.x 1005: 12+12+6+4+38+1+1+38+2+38 = 152 bits (19 bytes)
 MSG1005_PAYLOAD_BITS = 152
+MSG1006_PAYLOAD_BITS = 168
 
 
 def crc24q(data: bytes) -> int:
@@ -54,6 +61,12 @@ class BitWriter:
     def put_signed(self, value: int, n: int) -> None:
         self.put(value & ((1 << n) - 1), n)
 
+    def put_counted_string(self, s: str) -> None:
+        n = min(len(s), 31)
+        self.put(n, 8)
+        for ch in s[:n]:
+            self.put(ord(ch), 8)
+
     def to_bytes(self) -> bytes:
         out = bytearray((len(self._bits) + 7) // 8)
         for i, bit in enumerate(self._bits):
@@ -62,31 +75,56 @@ class BitWriter:
         return bytes(out)
 
 
-def make_1005() -> bytes:
-    """RTCM 1005 payload: dummy publish ARP (REQ-COD-1005-D golden).
+def put_1005_style_body(w: BitWriter, msg_type: int) -> None:
+    w.put(msg_type, 12)
+    w.put(PUBLISH_STATION_ID, 12)
+    w.put(0, 6)  # ITRF
+    w.put(1, 1)  # GPS
+    w.put(0, 1)
+    w.put(0, 1)
+    w.put(0, 1)
+    w.put_signed(PUBLISH_ECEF_X, 38)
+    w.put(0, 1)  # osc
+    w.put(0, 1)  # res
+    w.put_signed(PUBLISH_ECEF_Y, 38)
+    w.put(0, 2)  # QCI
+    w.put_signed(PUBLISH_ECEF_Z, 38)
 
-    Layout (152 bits): msg12, station12, ITRF6, GPS/GLO/GAL/ref (1 each),
-    X38, osc1, res1, Y38, QCI/res2, Z38.
-    """
+
+def make_1005() -> bytes:
     w = BitWriter()
-    w.put(1005, 12)  # DF002 message number
-    w.put(PUBLISH_STATION_ID, 12)  # DF003
-    w.put(0, 6)  # DF021 ITRF realization year
-    w.put(1, 1)  # DF022 GPS indicator
-    w.put(0, 1)  # DF023 GLONASS
-    w.put(0, 1)  # DF024 Galileo
-    w.put(0, 1)  # DF141 reference-station indicator
-    w.put_signed(PUBLISH_ECEF_X, 38)  # DF025 X
-    w.put(0, 1)  # DF142 oscillator
-    w.put(0, 1)  # DF001 reserved
-    w.put_signed(PUBLISH_ECEF_Y, 38)  # DF026 Y
-    w.put(0, 2)  # DF364 quarter-cycle indicator (reserved in 10403.1)
-    w.put_signed(PUBLISH_ECEF_Z, 38)  # DF027 Z
+    put_1005_style_body(w, 1005)
     if len(w._bits) != MSG1005_PAYLOAD_BITS:
         raise RuntimeError(f"1005 payload is {len(w._bits)} bits, expected {MSG1005_PAYLOAD_BITS}")
     payload = w.to_bytes()
     if len(payload) != 19:
         raise RuntimeError(f"1005 payload is {len(payload)} bytes, expected 19")
+    return wrap_frame(payload)
+
+
+def make_1006() -> bytes:
+    w = BitWriter()
+    put_1005_style_body(w, 1006)
+    w.put(PUBLISH_ANT_HEIGHT, 16)
+    if len(w._bits) != MSG1006_PAYLOAD_BITS:
+        raise RuntimeError(f"1006 payload is {len(w._bits)} bits, expected {MSG1006_PAYLOAD_BITS}")
+    payload = w.to_bytes()
+    if len(payload) != 21:
+        raise RuntimeError(f"1006 payload is {len(payload)} bytes, expected 21")
+    return wrap_frame(payload)
+
+
+def make_1033() -> bytes:
+    w = BitWriter()
+    w.put(1033, 12)
+    w.put(PUBLISH_STATION_ID, 12)
+    w.put_counted_string(PUBLISH_ANT_DESC)  # antenna descriptor
+    w.put(0, 8)  # antenna setup id
+    w.put_counted_string("")  # antenna serial
+    w.put_counted_string(PUBLISH_RX_DESC)  # receiver type
+    w.put_counted_string("")  # firmware
+    w.put_counted_string("")  # receiver serial
+    payload = w.to_bytes()
     return wrap_frame(payload)
 
 
@@ -101,14 +139,18 @@ def main() -> None:
 
     empty = wrap_frame(b"")
     f1005 = make_1005()
+    f1006 = make_1006()
+    f1033 = make_1033()
 
     frames = {
         "empty.bin": empty,
         "1005_dummy_arp.bin": f1005,
+        "1006_dummy_arp.bin": f1006,
+        "1033_sanitized.bin": f1033,
     }
     manifest = {
-        "version": 1,
-        "note": "synthetic CI contract; 1005 is bit-accurate dummy ARP",
+        "version": 2,
+        "note": "synthetic CI contract; 1005/1006 dummy ARP; 1033 sanitized descriptors",
         "frames": {},
     }
     for name, blob in frames.items():
@@ -117,12 +159,19 @@ def main() -> None:
             "bytes": len(blob),
             "crc_ok": True,
             "message_type": msg_type(blob) if len(blob) > 6 else None,
-            "station_policy": "publish_dummy" if "1005" in name else None,
+            "station_policy": "publish_dummy" if name != "empty.bin" else None,
         }
-        if "1005" in name:
-            entry["payload_bits"] = MSG1005_PAYLOAD_BITS
+        if "1005" in name or "1006" in name:
             entry["station_id"] = PUBLISH_STATION_ID
             entry["ecef_01mm"] = [PUBLISH_ECEF_X, PUBLISH_ECEF_Y, PUBLISH_ECEF_Z]
+        if "1005" in name:
+            entry["payload_bits"] = MSG1005_PAYLOAD_BITS
+        if "1006" in name:
+            entry["payload_bits"] = MSG1006_PAYLOAD_BITS
+            entry["antenna_height_01mm"] = PUBLISH_ANT_HEIGHT
+        if "1033" in name:
+            entry["antenna_descriptor"] = PUBLISH_ANT_DESC
+            entry["receiver_descriptor"] = PUBLISH_RX_DESC
         manifest["frames"][name] = entry
 
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

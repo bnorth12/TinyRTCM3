@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "note": "synthetic CI contract; 1005 is bit-accurate dummy ARP",
+  "version": 2,
+  "note": "synthetic CI contract; 1005/1006 dummy ARP; 1033 sanitized descriptors",
   "frames": {
     "empty.bin": {
       "bytes": 6,
@@ -13,13 +13,35 @@
       "crc_ok": true,
       "message_type": 1005,
       "station_policy": "publish_dummy",
-      "payload_bits": 152,
       "station_id": 0,
       "ecef_01mm": [
         63781370000,
         0,
         0
-      ]
+      ],
+      "payload_bits": 152
+    },
+    "1006_dummy_arp.bin": {
+      "bytes": 27,
+      "crc_ok": true,
+      "message_type": 1006,
+      "station_policy": "publish_dummy",
+      "station_id": 0,
+      "ecef_01mm": [
+        63781370000,
+        0,
+        0
+      ],
+      "payload_bits": 168,
+      "antenna_height_01mm": 15000
+    },
+    "1033_sanitized.bin": {
+      "bytes": 21,
+      "crc_ok": true,
+      "message_type": 1033,
+      "station_policy": "publish_dummy",
+      "antenna_descriptor": "ANT",
+      "receiver_descriptor": "RCV"
     }
   }
 }

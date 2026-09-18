@@ -105,13 +105,13 @@ static constexpr Requirement kRequirements[] = {
     {"REQ-COD-1005-D", "The library shall decode RTCM 1005 ARP fields into Msg1005.", true,
      nullptr},
     {"REQ-COD-1005-E", "The library shall encode Msg1005 into a CRC-valid 1005 frame.", true, nullptr},
-    {"REQ-COD-1006-D", "The library shall decode RTCM 1006 (ARP + antenna height).", false,
+    {"REQ-COD-1006-D", "The library shall decode RTCM 1006 (ARP + antenna height).", true,
      "Unsupported stub"},
-    {"REQ-COD-1006-E", "The library shall encode Msg1006 from ECEF + antenna height.", false,
+    {"REQ-COD-1006-E", "The library shall encode Msg1006 from ECEF + antenna height.", true,
      "Unsupported stub"},
-    {"REQ-COD-1033-D", "The library shall decode RTCM 1033 descriptors.", false,
+    {"REQ-COD-1033-D", "The library shall decode RTCM 1033 descriptors.", true,
      "Unsupported stub"},
-    {"REQ-COD-1033-E", "The library shall encode Msg1033 into a CRC-valid 1033 frame.", false,
+    {"REQ-COD-1033-E", "The library shall encode Msg1033 into a CRC-valid 1033 frame.", true,
      "Unsupported stub"},
     {"REQ-COD-1005-R",
      "The library shall rewrite 1005 station id and ARP to published dummy constants.", true, nullptr},
@@ -127,7 +127,7 @@ static constexpr Requirement kRequirements[] = {
      "Public field goldens shall never contain unsanitized real ARP or 1033 strings.", true,
      "process + gitignore + sanitizer script"},
     {"REQ-SAN-02",
-     "C++ sanitize API shall drop or rewrite location messages before public export.", true, "1005 rewrite; drop 1006/1033 until encode"},
+     "C++ sanitize API shall drop or rewrite location messages before public export.", true, "1005/1006 rewrite; 1033 sanitized descriptors"},
 
     // Goldens / verify
     {"REQ-GOLD-01", "CI shall treat synthetic goldens as the merge contract.", true, nullptr},
@@ -221,17 +221,17 @@ static constexpr Capability kCapabilities[] = {
     {"CAP-CODEC-1005", "RTCM 1005 codec",
      "Station ARP decode/encode and privacy rewrite for public goldens / NTRIP identity.", true, kReqIds_Codec1005, "decode/encode/rewrite 1005 met"},
     {"CAP-CODEC-1006", "RTCM 1006 codec",
-     "ARP + antenna height; optional companion to 1005 for survey-style bases.", false,
-     kReqIds_Codec1006, "Stubs return Unsupported"},
+     "ARP + antenna height; synthetic-first (LC29H typically cannot TX).", true,
+     kReqIds_Codec1006, "encode/decode + synthetic golden"},
     {"CAP-CODEC-1033", "RTCM 1033 codec",
      "Antenna/receiver descriptors; encode for honest station metadata, sanitize for publish.",
-     false, kReqIds_Codec1033, "Stubs return Unsupported"},
+     true, kReqIds_Codec1033, "encode/decode + sanitized synthetic golden"},
     {"CAP-CODEC-MSM", "MSM header+CNR summary",
      "Quality glance at MSM4/7 without storing full observation cells (v1 non-goal: encode MSM).",
      false, kReqIds_CodecMsm, "Summarize stub; encode MSM explicitly out of scope"},
     {"CAP-SANITIZE", "Location sanitization",
      "Keep real farm/shop ECEF and 1033 strings out of public artifacts.", true, kReqIds_Sanitize,
-     "1005 rewrite; drop 1006/1033"},
+     "1005/1006 rewrite; 1033 sanitized descriptors"},
     {"CAP-GOLDENS", "Golden corpora",
      "Synthetic CI contract + optional sanitized field soak.", true, kReqIds_Goldens, nullptr},
     {"CAP-SELFTEST", "In-library self-test",
@@ -270,8 +270,8 @@ static constexpr bool kCapPolicy = true;
 static constexpr bool kCapRegistry = true;
 static constexpr bool kCapStats = true;
 static constexpr bool kCapCodec1005 = true;
-static constexpr bool kCapCodec1006 = false;
-static constexpr bool kCapCodec1033 = false;
+static constexpr bool kCapCodec1006 = true;
+static constexpr bool kCapCodec1033 = true;
 static constexpr bool kCapCodecMsm = false;
 static constexpr bool kCapSanitize = true;
 static constexpr bool kCapGoldens = true;

@@ -11,7 +11,7 @@ namespace tinyrtcm3 {
 // Requirements: REQ-COD-1005-*, REQ-COD-1006-*, REQ-COD-1033-*, REQ-COD-MSM-*
 // Intent: expose a stable API surface for station ARP, descriptors, and MSM
 // quality summaries. v0.1 implements decode1005; encode/rewrite/1006/1033/MSM
-// remain Unsupported until later milestones.
+// MSM summary remains Unsupported until v0.4; 1005/1006/1033 are implemented.
 // Non-goal (v1): full MSM observation cell encode/decode (REQ-COD-MSM-X).
 // =============================================================================
 

@@ -152,5 +152,48 @@ int main() {
     expect(m.ecefZ01mm == kPublishArpEcef01mmZ, "golden Z");
   }
 
+
+  // --- v0.3 synthetic 1006 / 1033 ---
+  {
+    uint8_t buf[128];
+    size_t n = 0;
+    expect(findGolden("1006_dummy_arp.bin", buf, sizeof(buf), &n) != nullptr,
+           "load 1006_dummy_arp.bin");
+    expect(n == 27 && frameCrcOk(buf, n), "1006 golden CRC");
+    expect(messageType(buf, n) == 1006, "1006 golden type");
+    Msg1006 m6;
+    expect(decode1006(buf, n, &m6) == Status::Ok, "decode 1006 golden");
+    expect(m6.stationId == kPublishStationId, "1006 station 0");
+    expect(m6.ecefX01mm == kPublishArpEcef01mmX, "1006 X");
+    expect(m6.ecefY01mm == kPublishArpEcef01mmY, "1006 Y");
+    expect(m6.ecefZ01mm == kPublishArpEcef01mmZ, "1006 Z");
+    expect(m6.antennaHeight01mm == 15000, "1006 height 1.5m");
+
+    Msg1006 enc = m6;
+    enc.stationId = 11;
+    enc.antennaHeight01mm = 42;
+    uint8_t frame[64];
+    size_t fn = 0;
+    expect(encode1006(enc, frame, sizeof(frame), &fn) == Status::Ok, "encode1006");
+    Msg1006 back;
+    expect(decode1006(frame, fn, &back) == Status::Ok && back.stationId == 11 &&
+               back.antennaHeight01mm == 42,
+           "1006 encode/decode");
+
+    expect(findGolden("1033_sanitized.bin", buf, sizeof(buf), &n) != nullptr,
+           "load 1033_sanitized.bin");
+    expect(frameCrcOk(buf, n), "1033 golden CRC");
+    expect(messageType(buf, n) == 1033, "1033 golden type");
+    Msg1033 m3;
+    expect(decode1033(buf, n, &m3) == Status::Ok, "decode 1033 golden");
+    expect(m3.stationId == kPublishStationId, "1033 station 0");
+    expect(m3.antennaDescriptor[0] == 'A' && m3.antennaDescriptor[1] == 'N' &&
+               m3.antennaDescriptor[2] == 'T',
+           "1033 ant ANT");
+    expect(m3.receiverDescriptor[0] == 'R' && m3.receiverDescriptor[1] == 'C' &&
+               m3.receiverDescriptor[2] == 'V',
+           "1033 rx RCV");
+  }
+
   return fails ? 1 : 0;
 }

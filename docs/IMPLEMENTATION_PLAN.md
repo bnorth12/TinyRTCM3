@@ -77,6 +77,8 @@ in INTEGRATION and is out of scope for v0.1–v0.3 library milestones unless not
 
 ### v0.3 — DePIN/NTRIP message completeness (synthetic-first)
 
+**Status (v0.3):** Done 2026-09-18 — encode/decode 1006+1033, synthetic goldens, sanitize rewrite.
+
 | Work item | REQs / CAPs | Exit criteria |
 |-----------|-------------|----------------|
 | `encode1006` (+ decode1006 if cheap) | REQ-COD-1006-* | Synthetic golden round-trip |

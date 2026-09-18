@@ -215,20 +215,46 @@ int runSelfTests(VerifyReport* report, VerifyLogFn log, void* user) {
     else fail(r, log, user, "FAIL CAP-STATS");
   }
 
-  // Remaining codec stubs expected Unsupported (REQ-VER-02)
+  // v0.3: 1006 / 1033 encode-decode + MSM still Unsupported
   {
     Msg1006 m6;
-    Msg1033 m3;
-    MsmHeaderCnrSummary msm;
-    uint8_t buf[64];
+    m6.stationId = 7;
+    m6.ecefX01mm = kPublishArpEcef01mmX;
+    m6.ecefY01mm = -2;
+    m6.ecefZ01mm = kPublishArpEcef01mmZ;
+    m6.antennaHeight01mm = 15000;
+    uint8_t frame[64];
     size_t n = 0;
-    const bool stubs = decode1006(buf, 0, &m6) == Status::Unsupported &&
-                       encode1006(m6, buf, sizeof(buf), &n) == Status::Unsupported &&
-                       decode1033(buf, 0, &m3) == Status::Unsupported &&
-                       encode1033(m3, buf, sizeof(buf), &n) == Status::Unsupported &&
-                       summarizeMsmCnr(buf, 0, &msm) == Status::Unsupported;
-    if (stubs) skip(r, log, user, "skip CAP-CODEC-1006/1033/MSM (Unsupported)");
-    else fail(r, log, user, "FAIL expected Unsupported stubs");
+    Msg1006 back;
+    bool ok = encode1006(m6, frame, sizeof(frame), &n) == Status::Ok && n == 27 &&
+              decode1006(frame, n, &back) == Status::Ok && back.stationId == 7 &&
+              back.ecefX01mm == m6.ecefX01mm && back.ecefY01mm == -2 &&
+              back.ecefZ01mm == m6.ecefZ01mm && back.antennaHeight01mm == 15000;
+    if (ok) pass(r, log, user, "ok REQ-COD-1006-E/D encode/decode round-trip");
+    else fail(r, log, user, "FAIL REQ-COD-1006-E/D encode/decode round-trip");
+
+    Msg1033 m3;
+    m3.stationId = 3;
+    m3.antennaDescriptor[0] = 'A';
+    m3.antennaDescriptor[1] = 'N';
+    m3.antennaDescriptor[2] = 'T';
+    m3.receiverDescriptor[0] = 'R';
+    m3.receiverDescriptor[1] = 'C';
+    m3.receiverDescriptor[2] = 'V';
+    Msg1033 b3;
+    ok = encode1033(m3, frame, sizeof(frame), &n) == Status::Ok && n >= 6 &&
+         decode1033(frame, n, &b3) == Status::Ok && b3.stationId == 3 &&
+         b3.antennaDescriptor[0] == 'A' && b3.antennaDescriptor[1] == 'N' &&
+         b3.antennaDescriptor[2] == 'T' && b3.receiverDescriptor[0] == 'R' &&
+         b3.receiverDescriptor[1] == 'C' && b3.receiverDescriptor[2] == 'V';
+    if (ok) pass(r, log, user, "ok REQ-COD-1033-E/D encode/decode round-trip");
+    else fail(r, log, user, "FAIL REQ-COD-1033-E/D encode/decode round-trip");
+
+    MsmHeaderCnrSummary msm;
+    if (summarizeMsmCnr(frame, 0, &msm) == Status::Unsupported)
+      skip(r, log, user, "skip CAP-CODEC-MSM (Unsupported)");
+    else
+      fail(r, log, user, "FAIL expected MSM Unsupported");
   }
 
   emit(log, user, "TinyRTCM3 self-test end");
