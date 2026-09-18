@@ -51,3 +51,15 @@ python scripts/gen_synthetic_goldens.py
 ## License
 
 MIT — Copyright 2026 Brian
+
+## Requirements & self-test
+
+Capability matrix: src/TinyRtcmRequirements.h (see [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md)).
+
+`cpp
+#include <TinyRTCM3.h>
+tinyrtcm3::VerifyReport report;
+int failed = tinyrtcm3::runSelfTests(&report);  // 0 = ok
+`
+
+Host: 	est/host/test_self_tests.cpp (GitHub Actions host-verify). Device: examples/SelfTest.

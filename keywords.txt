@@ -50,3 +50,7 @@ kPublishArpEcef01mmX	LITERAL1
 kPublishArpEcef01mmY	LITERAL1
 kPublishArpEcef01mmZ	LITERAL1
 kPublishStationId	LITERAL1
+runSelfTests	KEYWORD2
+VerifyReport	KEYWORD1
+Requirement	KEYWORD1
+
