@@ -1,0 +1,45 @@
+﻿#######################################
+# Syntax Coloring Map for TinyRTCM3
+# v0.1 STUB: Codec APIs are Unsupported stubs; keyword list will grow with
+# decode1005 / encode1033 / MSM summary and will need a follow-up commit.
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+tinyrtcm3	KEYWORD1
+Status	KEYWORD1
+FrameView	KEYWORD1
+FrameAssembler	KEYWORD1
+BitBuffer	KEYWORD1
+Hub	KEYWORD1
+Msg1005	KEYWORD1
+Msg1033	KEYWORD1
+MsmHeaderCnrSummary	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+crc24q	KEYWORD2
+frameCrcOk	KEYWORD2
+messageType	KEYWORD2
+feed	KEYWORD2
+reset	KEYWORD2
+setFilter	KEYWORD2
+setEmit	KEYWORD2
+decode1005	KEYWORD2
+encode1005	KEYWORD2
+encode1033	KEYWORD2
+summarizeMsmCnr	KEYWORD2
+putBits	KEYWORD2
+byteLength	KEYWORD2
+bitLength	KEYWORD2
+resetWrite	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+kPublishArpEcef01mmX	LITERAL1
+kPublishArpEcef01mmY	LITERAL1
+kPublishArpEcef01mmZ	LITERAL1
+kPublishStationId	LITERAL1
