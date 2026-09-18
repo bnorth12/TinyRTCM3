@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "synthetic CI contract; 1005 scaffold until Codec lands",
+  "note": "synthetic CI contract; 1005 is bit-accurate dummy ARP",
   "frames": {
     "empty.bin": {
       "bytes": 6,
@@ -12,7 +12,14 @@
       "bytes": 25,
       "crc_ok": true,
       "message_type": 1005,
-      "station_policy": "publish_dummy"
+      "station_policy": "publish_dummy",
+      "payload_bits": 152,
+      "station_id": 0,
+      "ecef_01mm": [
+        63781370000,
+        0,
+        0
+      ]
     }
   }
 }

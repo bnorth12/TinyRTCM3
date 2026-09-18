@@ -10,10 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build and run runSelfTests
+      - name: Build and run host tests
         run: |
           g++ -std=c++17 -Wall -Wextra -I src \
             -o build_self_tests \
-            src/TinyRtcmVerify.cpp src/TinyRtcmCodec.cpp \
+            src/TinyRtcmVerify.cpp src/TinyRtcmCodec.cpp src/TinyRtcmSanitize.cpp \
             test/host/test_self_tests.cpp
           ./build_self_tests
+          g++ -std=c++17 -Wall -Wextra -I src \
+            -o build_crc_assembler \
+            test/host/test_crc_assembler.cpp
+          ./build_crc_assembler
+          g++ -std=c++17 -Wall -Wextra -I src \
+            -o build_bitbuffer_codec \
+            src/TinyRtcmCodec.cpp \
+            test/host/test_bitbuffer_codec.cpp
+          ./build_bitbuffer_codec

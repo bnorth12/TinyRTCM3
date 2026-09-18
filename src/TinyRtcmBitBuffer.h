@@ -8,9 +8,9 @@ namespace tinyrtcm3 {
 
 // =============================================================================
 // CAP-BIT-WRITE / CAP-BIT-READ — MSB-first bit buffer for RTCM data fields
-// Requirements: REQ-BIT-01 (write, implemented), REQ-BIT-02 (read, stub)
+// Requirements: REQ-BIT-01 (write), REQ-BIT-02 (read)
 // Intent: RTCM message bodies are packed MSB-first across byte boundaries.
-// Codec encode uses putBits; decode needs getBits (not yet implemented).
+// Codec encode uses putBits; decode uses getBits (same bit order).
 // =============================================================================
 class BitBuffer {
  public:
@@ -41,12 +41,21 @@ class BitBuffer {
     return Status::Ok;
   }
 
-  // Read nbits MSB-first into *out (REQ-BIT-02). STUB: always Unsupported.
+  // Read nbits (1..32) MSB-first into *out (REQ-BIT-02). Mirrors putBits order.
   Status getBits(uint8_t nbits, uint32_t* out) {
-    (void)nbits;
-    (void)out;
-    // Intent: mirror putBits bit order; required before real decode1005/etc.
-    return Status::Unsupported;
+    if (nbits == 0 || nbits > 32) return Status::InvalidArg;
+    if (data_ == nullptr || out == nullptr) return Status::InvalidArg;
+    uint32_t value = 0;
+    for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
+      const size_t byteIndex = bitPos_ / 8;
+      if (byteIndex >= cap_) return Status::Overflow;
+      const uint8_t bit =
+          static_cast<uint8_t>((data_[byteIndex] >> (7 - (bitPos_ % 8))) & 1u);
+      value |= static_cast<uint32_t>(bit) << i;
+      ++bitPos_;
+    }
+    *out = value;
+    return Status::Ok;
   }
 
   size_t byteLength() const { return (bitPos_ + 7) / 8; }

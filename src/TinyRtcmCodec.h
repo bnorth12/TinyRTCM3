@@ -6,12 +6,12 @@
 namespace tinyrtcm3 {
 
 // =============================================================================
-// Codec — selective RTCM message body decode/encode (mostly STUBS in v0.1)
+// Codec — selective RTCM message body decode/encode
 // Capabilities: CAP-CODEC-1005 / 1006 / 1033 / MSM (see TinyRtcmRequirements.h)
 // Requirements: REQ-COD-1005-*, REQ-COD-1006-*, REQ-COD-1033-*, REQ-COD-MSM-*
 // Intent: expose a stable API surface for station ARP, descriptors, and MSM
-// quality summaries so apps and sanitizer code can compile against the final
-// contracts while bit-accurate implementations land behind synthetic goldens.
+// quality summaries. v0.1 implements decode1005; encode/rewrite/1006/1033/MSM
+// remain Unsupported until later milestones.
 // Non-goal (v1): full MSM observation cell encode/decode (REQ-COD-MSM-X).
 // =============================================================================
 

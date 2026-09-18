@@ -72,8 +72,8 @@ static constexpr Requirement kRequirements[] = {
      "The library shall write MSB-first bit fields into a caller buffer.", true,
      nullptr},
     {"REQ-BIT-02",
-     "The library shall read MSB-first bit fields from a caller buffer.", false,
-     "getBits stub"},
+     "The library shall read MSB-first bit fields from a caller buffer.", true,
+     nullptr},
 
     // Hub
     {"REQ-HUB-01",
@@ -106,8 +106,8 @@ static constexpr Requirement kRequirements[] = {
      "Stream stats shall be resettable without affecting assembler state.", false, "stub"},
 
     // Codec 1005/1006/1033/MSM
-    {"REQ-COD-1005-D", "The library shall decode RTCM 1005 ARP fields into Msg1005.", false,
-     "Unsupported stub"},
+    {"REQ-COD-1005-D", "The library shall decode RTCM 1005 ARP fields into Msg1005.", true,
+     nullptr},
     {"REQ-COD-1005-E", "The library shall encode Msg1005 into a CRC-valid 1005 frame.", false,
      "Unsupported stub"},
     {"REQ-COD-1006-D", "The library shall decode RTCM 1006 (ARP + antenna height).", false,
@@ -211,8 +211,8 @@ static constexpr Capability kCapabilities[] = {
      "Pack RTCM DF bit fields MSB-first when encoding message bodies.", true, kReqIds_BitWrite,
      nullptr},
     {"CAP-BIT-READ", "Bit buffer read",
-     "Unpack RTCM DF bit fields MSB-first when decoding message bodies.", false, kReqIds_BitRead,
-     "Required before real Codec decode"},
+     "Unpack RTCM DF bit fields MSB-first when decoding message bodies.", true, kReqIds_BitRead,
+     nullptr},
     {"CAP-HUB", "Passthrough hub",
      "App-facing pipe: assemble -> optional filter -> emit toward radio/NTRIP/log.", true,
      kReqIds_Hub, nullptr},
@@ -227,7 +227,7 @@ static constexpr Capability kCapabilities[] = {
      kReqIds_Stats, "Stubs only in v0.1"},
     {"CAP-CODEC-1005", "RTCM 1005 codec",
      "Station ARP decode/encode and privacy rewrite for public goldens / NTRIP identity.",
-     false, kReqIds_Codec1005, "Stubs return Unsupported"},
+     false, kReqIds_Codec1005, "decode1005 met; encode/rewrite still Unsupported (v0.2)"},
     {"CAP-CODEC-1006", "RTCM 1006 codec",
      "ARP + antenna height; optional companion to 1005 for survey-style bases.", false,
      kReqIds_Codec1006, "Stubs return Unsupported"},
@@ -272,7 +272,7 @@ static constexpr bool kCapCrc24q = true;
 static constexpr bool kCapCrcTable = false;
 static constexpr bool kCapFrameAssembler = true;
 static constexpr bool kCapBitWrite = true;
-static constexpr bool kCapBitRead = false;
+static constexpr bool kCapBitRead = true;
 static constexpr bool kCapHub = true;
 static constexpr bool kCapPolicy = false;
 static constexpr bool kCapRegistry = false;

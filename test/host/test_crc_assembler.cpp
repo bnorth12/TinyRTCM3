@@ -1,4 +1,4 @@
-﻿#include <cstdio>
+#include <cstdio>
 #include <cstdint>
 #include <cstring>
 #include "TinyRtcmCrc24q.h"
@@ -75,8 +75,8 @@ int main() {
   }
   expect(st == Status::BadCrc, "assembler BadCrc on corrupt");
 
-  // Length mismatch rejected by appendCrc
-  uint8_t mismatch[16] = {0xD3, 0x00, 0x01, 0x00};
+  // Length mismatch rejected by appendCrc (header payloadLen=0 but bodyLen=4 != 3)
+  uint8_t mismatch[16] = {0xD3, 0x00, 0x00, 0x00};
   expect(appendCrc24q(mismatch, 4, sizeof(mismatch), &n2) == Status::InvalidArg,
          "appendCrc length mismatch");
 

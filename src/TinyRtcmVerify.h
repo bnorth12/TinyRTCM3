@@ -14,9 +14,9 @@ struct VerifyReport {
   int skipped = 0;  // known-unimplemented Codec stubs exercised as Unsupported
 };
 
-// Development self-test for implemented capabilities (CRC/assembler) and stub
-// expectations (Codec Unsupported). Returns failed count (0 = success).
-// No heap allocation. Safe to call from host CI or an Arduino SelfTest sketch.
+// Development self-test for implemented capabilities (CRC/assembler/getBits/
+// decode1005) and remaining Codec Unsupported skips. Returns failed count
+// (0 = success). No heap allocation. Safe for host CI or Arduino SelfTest.
 int runSelfTests(VerifyReport* report = nullptr, VerifyLogFn log = nullptr,
                  void* user = nullptr);
 
