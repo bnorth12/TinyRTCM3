@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 LC29H base RTCM capture over COM — no QGNSS.
 
@@ -109,34 +109,52 @@ PROFILES = {
     "iso-1005": {
         "pair432": "-1",
         "pair434": "1",
-        "notes": "1005 only (MSM off via PAIR432,-1); mirrors CAPTURE.md iso-1005",
+        "pair436": "0",
+        "notes": "1005 only (MSM off). Required gate A.",
         "expect_hint": ["1005"],
+        "required": True,
     },
     "msm4-bundle": {
         "pair432": "0",
         "pair434": "1",
-        "notes": "MSM4 + 1005 (PAIR432,0 + PAIR434,1)",
+        "pair436": "0",
+        "notes": "MSM4 + 1005 — LC29H rover lite + DePIN MSM4/1005. Required gate A/B.",
         "expect_hint": ["1005", "1074", "1084", "1094", "1124"],
+        "required": True,
     },
     "msm7-bundle": {
         "pair432": "1",
         "pair434": "1",
-        "notes": "MSM7 + 1005 — same as LC29H_GNSS::enableRTCM(true)",
+        "pair436": "0",
+        "notes": "MSM7 + 1005 — LC29H_GNSS enableRTCM(true). Required gate A.",
         "expect_hint": ["1005", "1077", "1087", "1097", "1127"],
+        "required": True,
+    },
+    "eph-bundle": {
+        "pair432": "-1",
+        "pair434": "0",
+        "pair436": "1",
+        "notes": "Optional: PAIR436 ephemeris RTCM (1019/…). Not required for rover/DePIN gate.",
+        "expect_hint": ["1019", "1020", "1042", "1046"],
+        "required": False,
     },
     "iso-1006": {
         "pair432": "-1",
         "pair434": "0",
-        "notes": "STUB: no library PAIR for exclusive 1006; MSM/1005 off only",
+        "pair436": "0",
+        "notes": "IMPOSSIBLE on LC29H TX (1006 is input-only per protocol). Use synthetic encode1006.",
         "expect_hint": ["1006"],
-        "limited": True,
+        "required": False,
+        "impossible_tx": True,
     },
     "iso-1033": {
         "pair432": "-1",
         "pair434": "0",
-        "notes": "STUB: no library PAIR for exclusive 1033; MSM/1005 off only",
+        "pair436": "0",
+        "notes": "IMPOSSIBLE on LC29H TX (1033 not in output table). Use synthetic encode1033 for DePIN.",
         "expect_hint": ["1033"],
-        "limited": True,
+        "required": False,
+        "impossible_tx": True,
     },
 }
 
@@ -175,11 +193,15 @@ class Lc29hCom:
         # Order matches enableRTCM: PAIR432 then PAIR434
         p432 = f"PAIR432,{profile['pair432']}"
         p434 = f"PAIR434,{profile['pair434']}"
+        p436 = f"PAIR436,{profile.get('pair436', '0')}"
         self.send_payload(p432)
         sent.append(p432)
         time.sleep(0.1)
         self.send_payload(p434)
         sent.append(p434)
+        time.sleep(0.1)
+        self.send_payload(p436)
+        sent.append(p436)
         time.sleep(0.1)
         return sent
 
@@ -248,6 +270,8 @@ def main() -> int:
         help="Seconds to wait after config before recording",
     )
     ap.add_argument("--firmware", default="", help="Optional firmware string for run.json")
+    ap.add_argument("--no-factory-reset", action="store_true",
+                    help="Skip PQTMRESTOREPAR+PAIR023 after captures (default: factory-reset when done)")
     ap.add_argument("--dry-run", action="store_true", help="Print payloads only; no serial")
     args = ap.parse_args()
 
@@ -329,6 +353,35 @@ def main() -> int:
                       file=sys.stderr)
     finally:
         device.close()
+
+
+    if (not args.dry_run) and (not args.no_factory_reset) and args.port:
+        print("Factory-resetting module (PQTMRESTOREPAR + PAIR023)...")
+        import serial as _serial
+        import time as _time
+
+        def _ck(payload: str) -> str:
+            c = 0
+            for ch in payload:
+                c ^= ord(ch)
+            return f"{c:02X}"
+
+        def _sent(payload: str) -> str:
+            return f"${payload}*{_ck(payload)}\r\n"
+
+        _ser = _serial.Serial(port=args.port, baudrate=args.baud, timeout=0.3)
+        try:
+            _ser.reset_input_buffer()
+            for _payload in ("PQTMRESTOREPAR", "PAIR023"):
+                _line = _sent(_payload)
+                print("TX", repr(_line))
+                _ser.write(_line.encode("ascii"))
+                _ser.flush()
+                _time.sleep(0.6 if _payload != "PAIR023" else 0.2)
+            _time.sleep(3.0)
+            print("Factory restore complete.")
+        finally:
+            _ser.close()
 
     print("Done. raw/ is gitignored. Sanitize before any public commit (docs/PRIVACY.md).")
     return 0
