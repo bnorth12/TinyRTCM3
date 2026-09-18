@@ -27,6 +27,8 @@ Transport pump (app or LC29H_GNSS UartPump)
 
 Quectel **PAIR/PQTM config** stays in LC29H_GNSS. TinyRTCM3 never opens a `HardwareSerial`.
 
+**Relationship:** TinyRTCM3 is an **optional peer** to LC29H_GNSS. Applications may use one, the other, or both. LC29H_GNSS must not require TinyRTCM3 to compile or run (see [INTEGRATION.md](INTEGRATION.md) §1a).
+
 ## 2. Ownership contracts (locked)
 
 | Concern | Owner | TinyRTCM3 |

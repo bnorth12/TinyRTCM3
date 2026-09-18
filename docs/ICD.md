@@ -4,7 +4,7 @@
 `src/TinyRtcmRequirements.h` (`kRequirements[]`, `kCapabilities[]`). If prose and
 header disagree, **fix the header and open a PR to sync this doc**.
 
-**Stack boundary:** `LC29H UART -> (pump/ring/demux) -> TinyRTCM3 -> app policy -> NTRIP/radio`. Quectel config + HW UART/NMEA remain in LC29H_GNSS. TinyRTCM3 does **not** own HW FIFO or the software ring — see [ARCHITECTURE.md](ARCHITECTURE.md) and [INTEGRATION.md](INTEGRATION.md). This ICD covers TinyRTCM3 API/CAP/REQ only.
+**Stack boundary:** `LC29H UART -> (pump/ring/demux) -> TinyRTCM3 -> app policy -> NTRIP/radio`. Quectel config + HW UART/NMEA remain in LC29H_GNSS. TinyRTCM3 does **not** own HW FIFO or the software ring — see [ARCHITECTURE.md](ARCHITECTURE.md) and [INTEGRATION.md](INTEGRATION.md) (optional peer — not required by LC29H_GNSS). This ICD covers TinyRTCM3 API/CAP/REQ only.
 Quectel config/UART remains in LC29H_GNSS-Library. This ICD covers TinyRTCM3 only.
 
 ## 1. Purpose

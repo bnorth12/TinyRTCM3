@@ -5,6 +5,8 @@ Compact **RTCM 3** helper for Arduino / PlatformIO (ESP32 RTK pipelines).
 Stack with Quectel LC29H: `LC29H UART → TinyRTCM3 → app policy → NTRIP`.  
 This library is **not** a Quectel config driver — keep that in [LC29H_GNSS-Library](https://github.com/bnorth12/LC29H_GNSS-Library).
 
+**Optional peer:** usable with [LC29H_GNSS](https://github.com/bnorth12/LC29H_GNSS-Library), never required by it.
+
 **Contracts:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (ownership) · [docs/INTEGRATION.md](docs/INTEGRATION.md) (phased app/GNSS impact) · [docs/ICD.md](docs/ICD.md).
 
 ## Status (v0.1.0 scaffold)

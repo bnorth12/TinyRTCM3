@@ -14,6 +14,21 @@ Companion: [ARCHITECTURE.md](ARCHITECTURE.md) (ownership), [ICD.md](ICD.md) (API
 4. **Demux stays at the pump** — LC29H_GNSS (or app) keeps NMEA mailboxes; TinyRTCM3 never steals `$` lines.
 5. **Disruptive cuts are explicit milestones** — versioned, with a short migration note in the app repo.
 
+
+## 1a. Optional peer (hard rule)
+
+TinyRTCM3 is an **optional peer library**, not a mandatory companion to LC29H_GNSS.
+
+| Rule | Meaning |
+|------|---------|
+| No required dependency | LC29H_GNSS `library.properties` / `library.json` / PlatformIO manifests **must not** list TinyRTCM3 as required |
+| Apps choose | Product firmware may use LC29H alone, TinyRTCM3 alone (bytes from any source), or both side-by-side |
+| Examples stay free | Existing LC29H_GNSS examples continue to build and run **without** TinyRTCM3 on the include path |
+| Optional only | Any LC29H helper/example that calls `tinyrtcm3::Hub` is behind an explicit opt-in (separate example, `#ifdef`, or docs-only sketch) |
+| No API hostage | LC29H public headers must not `#include` TinyRTCM3 or expose TinyRTCM3 types in required APIs |
+
+Phases B–D below never change this rule: even after pump cutover in an **app**, the **LC29H_GNSS library package** remains usable without TinyRTCM3.
+
 ## 2. Phase plan
 
 ### Phase A — TinyRTCM3 standalone (current focus)
@@ -35,7 +50,7 @@ Companion: [ARCHITECTURE.md](ARCHITECTURE.md) (ownership), [ICD.md](ICD.md) (API
 
 **In scope**
 - App or thin adapter feeds copies of RTCM bytes/frames into `tinyrtcm3::Hub` for metrics / filter / sanitize-before-publish
-- LC29H_GNSS gains an **optional** helper or example only — not a required dependency for existing examples
+- LC29H_GNSS may gain an **optional** helper or example only — TinyRTCM3 remains **never** a required dependency of the LC29H package or its existing examples
 
 **Out of scope**
 - Removing existing writeRaw / BLE RTCM paths
