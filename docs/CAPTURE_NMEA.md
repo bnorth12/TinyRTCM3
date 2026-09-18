@@ -50,3 +50,8 @@ GGA/RMC/GLL/GNS (and some PQTM) contain lat/lon — keep under `raw/`, never pub
 ## Tool
 `scripts/capture_nmea_com.py` — extend with prerequisite profiles, e.g.
 `--mode default|svin|geofence|jamming` for the gated set.
+
+## Full gated-mode plan
+
+See [GATED_CAPTURE_MODES.md](GATED_CAPTURE_MODES.md). Library recipes: LC29H_GNSS `docs/GatedOutputs.md`. 
+
