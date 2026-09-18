@@ -1,27 +1,53 @@
 ﻿# TinyRTCM3
 
-Small standalone **Arduino / PlatformIO** helper for RTCM 3.x framing and selective encode/decode.
+Compact **RTCM 3** helper for Arduino / PlatformIO (ESP32 RTK pipelines).
 
-**Not** a full RTCM 3.2 stack. Kept separate from [LC29H_GNSS-Library](https://github.com/bnorth12/LC29H_GNSS-Library) (Quectel config / UART).
+Stack with Quectel LC29H: `LC29H UART → TinyRTCM3 → app policy → NTRIP`.  
+This library is **not** a Quectel config driver — keep that in [LC29H_GNSS-Library](https://github.com/bnorth12/LC29H_GNSS-Library).
 
-## Role in the stack
+## Status (v0.1.0 scaffold)
 
-`LC29H UART → TinyRTCM3 (assemble / CRC / selective codec) → app policy → NTRIP`
+| Piece | Status |
+|-------|--------|
+| CRC-24Q + frame assembler | Implemented |
+| Passthrough hub | Implemented |
+| Bit buffer (write) | Stub |
+| 1005 decode / 1033 encode / MSM CNR | **Unsupported stubs** — next milestone |
+| Synthetic goldens | CI contract (`test/golden/synthetic/`) |
+| Field goldens | Optional; **must be sanitized** — see [docs/PRIVACY.md](docs/PRIVACY.md) |
 
-- Library owns: framing, CRC-24Q, selective decode/encode, passthrough hub
-- Apps own: RTK vs other policy (what to forward, rewrite, or drop)
+## Layout
 
-## v1 scope (planned)
+```
+src/                 headers + codec stubs
+examples/PassThroughHub/
+test/golden/synthetic/   CI fixtures (safe to publish)
+test/golden/field/       sanitized soak only (empty until you add)
+test/host/               native CRC/assembler smoke
+scripts/                 gen_synthetic_goldens.py, sanitize_rtcm_location.py
+docs/                    ARCHITECTURE, CAPTURE, PRIVACY
+raw/                     local captures only (gitignored)
+```
 
-| Direction | Messages |
-|-----------|----------|
-| Decode | 1005, optional 1006; MSM4/7 **headers + CNR/quality summary** (listed MSM types) — no full observation cells |
-| Encode | 1033; optional 1006 from ECEF; optional 1005 station-id rewrite — **never** MSM / 1230 |
+## Privacy (do not skip)
 
-## Status
+Raw base captures are **not anonymous**: **1005/1006 contain ECEF ARP**. Never commit `raw/` or unsanitized QGNSS logs. Public field goldens only after `scripts/sanitize_rtcm_location.py`. Details: [docs/PRIVACY.md](docs/PRIVACY.md), capture plan: [docs/CAPTURE.md](docs/CAPTURE.md).
 
-Scaffold only (README + MIT). Implementation and synthetic goldens come next. Field QGNSS captures are optional soak tests, not the CI contract.
+## Quick use
+
+```cpp
+#include <TinyRTCM3.h>
+using namespace tinyrtcm3;
+Hub hub;
+// hub.setEmit(...); then hub.feed(byte);
+```
+
+## Generate synthetic goldens
+
+```bash
+python scripts/gen_synthetic_goldens.py
+```
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — Copyright 2026 Brian

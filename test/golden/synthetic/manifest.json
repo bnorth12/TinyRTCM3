@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "note": "synthetic CI contract; 1005 scaffold until Codec lands",
+  "frames": {
+    "empty.bin": {
+      "bytes": 6,
+      "crc_ok": true,
+      "message_type": null,
+      "station_policy": null
+    },
+    "1005_dummy_arp.bin": {
+      "bytes": 25,
+      "crc_ok": true,
+      "message_type": 1005,
+      "station_policy": "publish_dummy"
+    }
+  }
+}
