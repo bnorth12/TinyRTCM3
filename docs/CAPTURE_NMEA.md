@@ -12,31 +12,41 @@ RMC, GGA, GSV, GSA, VTG, GLL, ZDA, GRS, GST, GNS
 PQTMEPE, PQTMGEOFENCESTATUS, PQTMSVINSTATUS, PQTMPVT, PQTMPL, PQTMDOP,
 PQTMVEL, PQTMODO, PQTMJAMMINGSTATUS, PQTMLS, PQTMSTD
 
-## Mode prerequisites (do not treat EMPTY as “unsupported” without this)
+## Rule: EMPTY ≠ unsupported
 
-Some messages only emit when the receiver is in a matching mode / feature state.
-Mute→enable alone is not enough.
+Several sentences only produce useful (or any) content when the module is in a
+**specific mode / feature state**. Enabling `PQTMCFGMSGRATE` alone is not enough.
 
-| Message | Prerequisite (typical) | Notes |
-|---------|------------------------|--------|
-| `PQTMSVINSTATUS` | Base + **survey-in active** (`PQTMCFGSVIN` / SVIN running) | Expected empty in plain rover/default |
-| `PQTMGEOFENCESTATUS` | Geofence configured/enabled | May still ACK CFGMSGRATE; body needs fence |
-| `PQTMJAMMINGSTATUS` | Jamming/interference detect enabled (PAIR/AIC path) | Feature-dependent |
-| `PQTMLS` / `PQTMSTD` | Firmware / feature set that outputs those PQTM types | Verify against EA FW notes |
-| `ZDA` / `GRS` / `GST` / `GNS` | Often off by default; some need nav solution quality or specific CFG | Re-try after known-good fix + explicit rate 1; confirm EA support for each |
+Until a message has been captured under its documented prerequisite mode, classify
+EMPTY results as **`mode_or_feature_gated_candidate`**, not “unsupported on EA.”
 
-**2026-09-18 EA session:** PASS on RMC/GGA/GSV/GSA/VTG/GLL + several PQTM; EMPTY on ZDA/GRS/GST/GNS + PQTMSVINSTATUS/JAMMING/LS/STD — re-run EMPTY set under the prerequisites above before marking “unsupported on EA.”
+### Prerequisite matrix (working list)
+
+| Message | Mode / setup required for details | Capture notes |
+|---------|-----------------------------------|---------------|
+| **RMC, GGA, GSV, GSA, VTG, GLL** | Normal nav / fix (rover or after restore) | Baseline discrete PASS on EA 2026-09-18 |
+| **ZDA** | Time/UTC available; sentence explicitly enabled | Often off by default — rate 1 after valid time |
+| **GRS** | Residuals path enabled; typically needs fix + related config | Mode-gated; re-run under residual-capable setup |
+| **GST** | Error/ellipse / quality output path enabled; needs fix | Mode-gated; not expected in bare mute→enable |
+| **GNS** | Multi-GNSS NMEA mode / talker config as required by FW | Confirm CFGMSGRATE + any NMEA mode PAIR |
+| **PQTMSVINSTATUS** | **Base + survey-in active** (`PQTMCFGSVIN` / SVIN running) | Expected empty in default rover |
+| **PQTMGEOFENCESTATUS** | Geofence(s) defined and feature enabled | Enable alone may not emit status |
+| **PQTMJAMMINGSTATUS** | Jamming / AIC / interference detect enabled | Feature mode required |
+| **PQTMLS / PQTMSTD** | Matching FW feature / debug-stat mode if applicable | Verify against EA release notes |
+| **PQTMPVT, PQTMVEL, PQTMDOP, PQTMPL, PQTMEPE, PQTMODO** | Normal nav (and odos if ODO) | PASS on EA 2026-09-18 without special modes |
 
 ## Process
-1. Query identity (`PQTMVERNO`) into session metadata.
-2. Mute all listed messages (`PQTMCFGMSGRATE,W,<name>,0` [`,ver` for PQTM]).
-3. For each message: enter **required mode** (if any) → enable only that name @ rate 1 →
-   capture N seconds → `raw/nmea/<name>/<timestamp>.nmea` + `run.json`.
-4. Record `prerequisite` + `mode` in `run.json`.
-5. Factory-reset: `PQTMRESTOREPAR` + `PAIR023` when the exercise ends.
+1. Query identity (`PQTMVERNO`) into session / `run.json`.
+2. Mute all listed messages.
+3. **Enter prerequisite mode** for the target message (base+SVIN, geofence, jamming, etc.).
+4. Enable **only** that message @ rate 1 → capture N seconds →
+   `raw/nmea/<name>/<timestamp>.nmea` + `run.json` with `prerequisite` / `mode` fields.
+5. Exit special mode (or factory-reset) before the next gated capture.
+6. End of session: `PQTMRESTOREPAR` + `PAIR023`.
 
 ## Privacy
-GGA/RMC/GLL/GNS (and some PQTM) contain lat/lon — `unsanitized: true`, do not publish.
+GGA/RMC/GLL/GNS (and some PQTM) contain lat/lon — keep under `raw/`, never publish unsanitized.
 
 ## Tool
-`scripts/capture_nmea_com.py` (extend with `--prerequisite-mode svin|…` for gated messages).
+`scripts/capture_nmea_com.py` — extend with prerequisite profiles, e.g.
+`--mode default|svin|geofence|jamming` for the gated set.
