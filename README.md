@@ -5,6 +5,8 @@ Compact **RTCM 3** helper for Arduino / PlatformIO (ESP32 RTK pipelines).
 Stack with Quectel LC29H: `LC29H UART → TinyRTCM3 → app policy → NTRIP`.  
 This library is **not** a Quectel config driver — keep that in [LC29H_GNSS-Library](https://github.com/bnorth12/LC29H_GNSS-Library).
 
+**Contracts:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (ownership) · [docs/INTEGRATION.md](docs/INTEGRATION.md) (phased app/GNSS impact) · [docs/ICD.md](docs/ICD.md).
+
 ## Status (v0.1.0 scaffold)
 
 | Piece | Status |
@@ -25,7 +27,7 @@ test/golden/synthetic/   CI fixtures (safe to publish)
 test/golden/field/       sanitized soak only (empty until you add)
 test/host/               native CRC/assembler smoke
 scripts/                 gen_synthetic_goldens.py, sanitize_rtcm_location.py
-docs/                    ARCHITECTURE, CAPTURE, PRIVACY
+docs/                    ARCHITECTURE, INTEGRATION, ICD, CAPTURE, PRIVACY
 raw/                     local captures only (gitignored)
 ```
 
