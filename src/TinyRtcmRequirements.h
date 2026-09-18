@@ -17,7 +17,7 @@ namespace tinyrtcm3 {
 // =============================================================================
 
 static constexpr uint16_t kVersionMajor = 0;
-static constexpr uint16_t kVersionMinor = 1;
+static constexpr uint16_t kVersionMinor = 5;
 static constexpr uint16_t kVersionPatch = 0;
 
 // --- Individual requirement (shall-statement) --------------------------------
@@ -51,10 +51,10 @@ static constexpr Requirement kRequirements[] = {
      nullptr},
     {"REQ-CRC-03",
      "The library shall append CRC-24Q when finalizing an outbound frame.", true,
-     "bit-at-a-time; table acceleration is CAP-CRC-TABLE"},
+     "evaluate+generate foundational; table is CAP-CRC-TABLE"},
     {"REQ-CRC-04",
-     "The library shall offer optional table-accelerated CRC-24Q.", false,
-     "deferred"},
+     "The library shall offer optional table-accelerated CRC-24Q.", true,
+     "table default; bit path for identity tests"},
 
     // Assembler
     {"REQ-ASM-01",
@@ -106,18 +106,18 @@ static constexpr Requirement kRequirements[] = {
      nullptr},
     {"REQ-COD-1005-E", "The library shall encode Msg1005 into a CRC-valid 1005 frame.", true, nullptr},
     {"REQ-COD-1006-D", "The library shall decode RTCM 1006 (ARP + antenna height).", true,
-     "Unsupported stub"},
+     "implemented"},
     {"REQ-COD-1006-E", "The library shall encode Msg1006 from ECEF + antenna height.", true,
-     "Unsupported stub"},
+     "implemented"},
     {"REQ-COD-1033-D", "The library shall decode RTCM 1033 descriptors.", true,
-     "Unsupported stub"},
+     "implemented"},
     {"REQ-COD-1033-E", "The library shall encode Msg1033 into a CRC-valid 1033 frame.", true,
-     "Unsupported stub"},
+     "implemented"},
     {"REQ-COD-1005-R",
      "The library shall rewrite 1005 station id and ARP to published dummy constants.", true, nullptr},
     {"REQ-COD-MSM-S",
      "The library shall summarize MSM4/7 headers and mean CNR without full obs cells.", true,
-     "Unsupported stub"},
+     "implemented"},
     {"REQ-COD-MSM-X",
      "The library shall NOT encode MSM or 1230 in v1 (non-goal).", true,
      "met by refusing encode; returns Unsupported"},
@@ -127,7 +127,7 @@ static constexpr Requirement kRequirements[] = {
      "Public field goldens shall never contain unsanitized real ARP or 1033 strings.", true,
      "process + gitignore + sanitizer script"},
     {"REQ-SAN-02",
-     "C++ sanitize API shall drop or rewrite location messages before public export.", true, "1005/1006 rewrite; 1033 sanitized descriptors"},
+     "C++ sanitize API shall drop or rewrite location messages before public export.", true, "1005/1006 rewrite; 1033 sanitized; sanitizeBeforeEmit"},
 
     // Goldens / verify
     {"REQ-GOLD-01", "CI shall treat synthetic goldens as the merge contract.", true, nullptr},
@@ -136,6 +136,20 @@ static constexpr Requirement kRequirements[] = {
      true, nullptr},
     {"REQ-VER-02", "Self-test shall treat unimplemented Codec APIs as expected Unsupported skips.",
      true, nullptr},
+
+
+    // Solid-library extensions (v0.5)
+    {"REQ-POL-03", "The library shall provide an ISO-only stock filter (1005/1006/1033).", true,
+     "policyFilterIsoOnly"},
+    {"REQ-HUB-03", "The library shall accept a byte buffer via Hub::feed(data,len).", true,
+     "batch feed"},
+    {"REQ-STAT-03", "Stream stats shall count OK frames by type family (1005/1006/1033/MSM4/MSM7/other).",
+     true, "histogram"},
+    {"REQ-COD-1006-R", "The library shall rewrite 1006 station id and ARP to published dummy constants.",
+     true, "rewrite1006ToPublishIdentity"},
+    {"REQ-SAN-03", "The library shall provide a sanitize-before-emit helper for Hub Emit adapters.",
+     true, "sanitizeBeforeEmit"},
+    {"REQ-VER-03", "Self-test shall prove table CRC bit-identical to the bit engine.", true, nullptr},
 
     // NTRIP (out of library proper)
     {"REQ-NTRIP-01",
@@ -170,21 +184,21 @@ static constexpr const char* kReqIds_Assembler[] = {
     "REQ-ASM-01", "REQ-ASM-02", "REQ-ASM-03", nullptr};
 static constexpr const char* kReqIds_BitWrite[] = {"REQ-BIT-01", nullptr};
 static constexpr const char* kReqIds_BitRead[] = {"REQ-BIT-02", nullptr};
-static constexpr const char* kReqIds_Hub[] = {"REQ-HUB-01", "REQ-HUB-02", nullptr};
-static constexpr const char* kReqIds_Policy[] = {"REQ-POL-01", "REQ-POL-02", nullptr};
+static constexpr const char* kReqIds_Hub[] = {"REQ-HUB-01", "REQ-HUB-02", "REQ-HUB-03", nullptr};
+static constexpr const char* kReqIds_Policy[] = {"REQ-POL-01", "REQ-POL-02", "REQ-POL-03", nullptr};
 static constexpr const char* kReqIds_Registry[] = {"REQ-REG-01", "REQ-REG-02", nullptr};
-static constexpr const char* kReqIds_Stats[] = {"REQ-STAT-01", "REQ-STAT-02", nullptr};
+static constexpr const char* kReqIds_Stats[] = {"REQ-STAT-01", "REQ-STAT-02", "REQ-STAT-03", nullptr};
 static constexpr const char* kReqIds_Codec1005[] = {
     "REQ-COD-1005-D", "REQ-COD-1005-E", "REQ-COD-1005-R", nullptr};
 static constexpr const char* kReqIds_Codec1006[] = {
-    "REQ-COD-1006-D", "REQ-COD-1006-E", nullptr};
+    "REQ-COD-1006-D", "REQ-COD-1006-E", "REQ-COD-1006-R", nullptr};
 static constexpr const char* kReqIds_Codec1033[] = {
     "REQ-COD-1033-D", "REQ-COD-1033-E", nullptr};
 static constexpr const char* kReqIds_CodecMsm[] = {
     "REQ-COD-MSM-S", "REQ-COD-MSM-X", nullptr};
-static constexpr const char* kReqIds_Sanitize[] = {"REQ-SAN-01", "REQ-SAN-02", nullptr};
+static constexpr const char* kReqIds_Sanitize[] = {"REQ-SAN-01", "REQ-SAN-02", "REQ-SAN-03", nullptr};
 static constexpr const char* kReqIds_Goldens[] = {"REQ-GOLD-01", "REQ-GOLD-02", nullptr};
-static constexpr const char* kReqIds_SelfTest[] = {"REQ-VER-01", "REQ-VER-02", nullptr};
+static constexpr const char* kReqIds_SelfTest[] = {"REQ-VER-01", "REQ-VER-02", "REQ-VER-03", nullptr};
 static constexpr const char* kReqIds_NtripBoundary[] = {"REQ-NTRIP-01", nullptr};
 
 // -----------------------------------------------------------------------------
@@ -193,10 +207,10 @@ static constexpr const char* kReqIds_NtripBoundary[] = {"REQ-NTRIP-01", nullptr}
 static constexpr Capability kCapabilities[] = {
     {"CAP-CRC-24Q", "CRC-24Q transport",
      "Guarantee every RTCM3 frame on the wire is integrity-checked or correctly sealed.",
-     true, kReqIds_Crc24q, "Implemented bit-at-a-time"},
+     true, kReqIds_Crc24q, "evaluate+generate; table default"},
     {"CAP-CRC-TABLE", "CRC-24Q table accel",
-     "Optional speed path for high-rate UART without changing CRC results.", false,
-     kReqIds_CrcTable, "Same poly/init as CAP-CRC-24Q"},
+     "Optional speed path for high-rate UART without changing CRC results.", true,
+     kReqIds_CrcTable, "table default; TINYRTCM3_CRC_BIT_ONLY for bit path"},
     {"CAP-FRAME-ASM", "Frame assembler",
      "Turn UART/NTRIP byte streams into discrete CRC-valid frames for policy/codec.", true,
      kReqIds_Assembler, nullptr},
@@ -231,7 +245,7 @@ static constexpr Capability kCapabilities[] = {
      true, kReqIds_CodecMsm, "MSM4/7 header+mean CNR; encode MSM out of scope"},
     {"CAP-SANITIZE", "Location sanitization",
      "Keep real farm/shop ECEF and 1033 strings out of public artifacts.", true, kReqIds_Sanitize,
-     "1005/1006 rewrite; 1033 sanitized descriptors"},
+     "1005/1006 rewrite; 1033 sanitized; sanitizeBeforeEmit"},
     {"CAP-GOLDENS", "Golden corpora",
      "Synthetic CI contract + optional sanitized field soak.", true, kReqIds_Goldens, nullptr},
     {"CAP-SELFTEST", "In-library self-test",
@@ -261,7 +275,7 @@ inline const Capability* findCapability(const char* id) {
 
 // Convenience booleans (mirror capability implemented flags for #if-style checks)
 static constexpr bool kCapCrc24q = true;
-static constexpr bool kCapCrcTable = false;
+static constexpr bool kCapCrcTable = true;
 static constexpr bool kCapFrameAssembler = true;
 static constexpr bool kCapBitWrite = true;
 static constexpr bool kCapBitRead = true;

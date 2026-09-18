@@ -1,4 +1,6 @@
-﻿# TinyRTCM3
+# TinyRTCM3
+
+**Solid library gate:** [docs/SOLID_LIBRARY.md](docs/SOLID_LIBRARY.md) (v0.5). CRC evaluate+generate is foundational (table-accelerated by default).
 
 Compact **RTCM 3** helper for Arduino / PlatformIO (ESP32 RTK pipelines).
 
@@ -11,14 +13,14 @@ This library is **not** a Quectel config driver — keep that in [LC29H_GNSS-Lib
 
 **Contracts:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (ownership) · [docs/INTEGRATION.md](docs/INTEGRATION.md) (phased app/GNSS impact) · [docs/ICD.md](docs/ICD.md).
 
-## Status (v0.1.0 scaffold)
+## Status (v0.5.0 scaffold)
 
 | Piece | Status |
 |-------|--------|
 | CRC-24Q + frame assembler | Implemented |
 | Passthrough hub | Implemented |
 | Bit buffer (write) | Stub |
-| 1005 decode / 1033 encode / MSM CNR | **Unsupported stubs** — next milestone |
+| 1005 decode / 1033 encode / MSM CNR | **implemented (see ICD)** — next milestone |
 | Synthetic goldens | CI contract (`test/golden/synthetic/`) |
 | Field goldens | Optional; **must be sanitized** — see [docs/PRIVACY.md](docs/PRIVACY.md) |
 

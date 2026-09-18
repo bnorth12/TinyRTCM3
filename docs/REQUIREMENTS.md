@@ -1,36 +1,32 @@
 # Requirements & capabilities
 
-**Normative machine-readable source:** `src/TinyRtcmRequirements.h`  
-**Interface prose:** [ICD.md](ICD.md)
+**Normative machine-readable source:** src/TinyRtcmRequirements.h  
+**Interface prose:** [ICD.md](ICD.md)  
+**Solid gate:** [SOLID_LIBRARY.md](SOLID_LIBRARY.md)
 
 ## Rule
 
-Every **capability** (`CAP-*`) documents one or more **requirements** (`REQ-*`)
-via `Capability.reqIds`. Do not add a capability without requirements.
+Every **capability** (CAP-*) documents one or more **requirements** (REQ-*)
+via Capability.reqIds. Do not add a capability without requirements.
 
-| Capability | Implemented (v0.1) | Requirements |
-|------------|--------------------|--------------|
-| CAP-CRC-24Q | yes | REQ-CRC-01..03 |
-| CAP-CRC-TABLE | no | REQ-CRC-04 |
-| CAP-FRAME-ASM | yes | REQ-ASM-01..03 |
-| CAP-BIT-WRITE | yes | REQ-BIT-01 |
-| CAP-BIT-READ | no (stub) | REQ-BIT-02 |
-| CAP-HUB | yes | REQ-HUB-01..02 |
-| CAP-POLICY | stub helpers | REQ-POL-01..02 |
-| CAP-REGISTRY | stub | REQ-REG-01..02 |
-| CAP-STATS | stub | REQ-STAT-01..02 |
-| CAP-CODEC-1005 | stub | REQ-COD-1005-D/E/R |
-| CAP-CODEC-1006 | stub | REQ-COD-1006-D/E |
-| CAP-CODEC-1033 | stub | REQ-COD-1033-D/E |
-| CAP-CODEC-MSM | stub | REQ-COD-MSM-S/X |
-| CAP-SANITIZE | partial | REQ-SAN-01..02 |
-| CAP-GOLDENS | yes (process) | REQ-GOLD-01..02 |
-| CAP-SELFTEST | yes | REQ-VER-01..02 |
-| CAP-NTRIP-BOUNDARY | documented | REQ-NTRIP-01 |
+Library version: **0.5.0** (kVersion* in the header).
 
-Shall-statements live in `kRequirements[]` (not duplicated here). When implementing:
-update `met` / `implemented`, extend `runSelfTests`, goldens, and ICD together.
+| Capability | Implemented | Notes |
+|------------|-------------|-------|
+| CAP-CRC-24Q | yes | evaluate+generate foundational |
+| CAP-CRC-TABLE | yes | default path; bit path for identity tests |
+| CAP-FRAME-ASM | yes | |
+| CAP-BIT-WRITE / CAP-BIT-READ | yes | |
+| CAP-HUB | yes | + batch feed |
+| CAP-POLICY | yes | + ISO-only |
+| CAP-REGISTRY | yes | not wired into Hub (deferred) |
+| CAP-STATS | yes | + type histogram |
+| CAP-CODEC-1005/1006/1033 | yes | + rewrite1006 |
+| CAP-CODEC-MSM | yes | MSM4/7 summary only |
+| CAP-SANITIZE | yes | + sanitizeBeforeEmit |
+| CAP-GOLDENS / CAP-SELFTEST | yes | |
+| CAP-NTRIP-BOUNDARY | yes | sink stub only |
 
-## Execution
+Shall-statements live in kRequirements[]. Flip met / implemented in the same commit as code.
 
-Milestone sequencing and exit criteria: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+Ephemeris and Hub↔Registry wiring are **deferred**. Peer CRC duplicates stay until product integration.

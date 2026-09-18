@@ -8,6 +8,7 @@
 #include "TinyRtcmPolicy.h"
 #include "TinyRtcmRegistry.h"
 #include "TinyRtcmStats.h"
+#include "TinyRtcmHub.h"
 
 namespace tinyrtcm3 {
 namespace {
@@ -271,6 +272,68 @@ int runSelfTests(VerifyReport* report, VerifyLogFn log, void* user) {
           msm.satCount == 2 && msm.sigCount == 2 && msm.meanCnr01dBHz == 450;
     if (mok) pass(r, log, user, "ok REQ-COD-MSM-S MSM4 mean CNR");
     else fail(r, log, user, "FAIL REQ-COD-MSM-S MSM4 mean CNR");
+  }
+
+
+  // v0.5 solid: table CRC identity, IsoOnly, batch feed, histogram, rewrite1006
+  {
+    uint8_t buf[64];
+    for (int i = 0; i < 64; ++i) buf[i] = static_cast<uint8_t>(i * 37u);
+    bool ok = true;
+    for (size_t n = 0; n <= 64; n += 3) {
+      if (crc24qBit(buf, n) != crc24qTable(buf, n)) ok = false;
+    }
+    uint8_t frame[16];
+    size_t fl = 0;
+    ok = ok && finalizeFrame(nullptr, 0, frame, sizeof(frame), &fl) == Status::Ok &&
+         frameCrcOk(frame, fl) && crc24qBit(frame, fl - 3) == crc24qTable(frame, fl - 3);
+    if (ok) pass(r, log, user, "ok REQ-VER-03 / CAP-CRC-TABLE bit-identical");
+    else fail(r, log, user, "FAIL REQ-VER-03 table vs bit CRC");
+
+    ok = policyFilterIsoOnly(1005, nullptr, 0, nullptr) &&
+         policyFilterIsoOnly(1006, nullptr, 0, nullptr) &&
+         policyFilterIsoOnly(1033, nullptr, 0, nullptr) &&
+         !policyFilterIsoOnly(1074, nullptr, 0, nullptr);
+    if (ok) pass(r, log, user, "ok REQ-POL-03 ISO-only filter");
+    else fail(r, log, user, "FAIL REQ-POL-03");
+
+    Hub hub;
+    StreamStats st{};
+    hub.setStats(&st);
+    size_t consumed = 0;
+    Status last = hub.feed(frame, fl, &consumed);
+    ok = consumed == fl && last == Status::Ok && st.bytesIn == fl && st.framesOk == 1;
+    if (ok) pass(r, log, user, "ok REQ-HUB-03 batch feed + stats");
+    else fail(r, log, user, "FAIL REQ-HUB-03 batch feed");
+
+    Msg1006 m6;
+    m6.stationId = 9;
+    m6.ecefX01mm = 123;
+    m6.ecefY01mm = 456;
+    m6.ecefZ01mm = 789;
+    m6.antennaHeight01mm = 100;
+    uint8_t f6[64];
+    size_t n6 = 0;
+    Msg1006 back;
+    ok = encode1006(m6, f6, sizeof(f6), &n6) == Status::Ok &&
+         rewrite1006ToPublishIdentity(f6, n6, f6, sizeof(f6), &n6) == Status::Ok &&
+         decode1006(f6, n6, &back) == Status::Ok && back.stationId == kPublishStationId &&
+         back.ecefX01mm == kPublishArpEcef01mmX && back.antennaHeight01mm == 100;
+    if (ok) pass(r, log, user, "ok REQ-COD-1006-R rewrite1006");
+    else fail(r, log, user, "FAIL REQ-COD-1006-R");
+
+    Msg1005 m5;
+    m5.stationId = 1;
+    m5.ecefX01mm = kPublishArpEcef01mmX;
+    uint8_t f5[64];
+    size_t n5 = 0;
+    StreamStats hst{};
+    Hub hub2;
+    hub2.setStats(&hst);
+    ok = encode1005(m5, f5, sizeof(f5), &n5) == Status::Ok &&
+         hub2.feed(f5, n5, nullptr) == Status::Ok && hst.type1005 == 1;
+    if (ok) pass(r, log, user, "ok REQ-STAT-03 type histogram");
+    else fail(r, log, user, "FAIL REQ-STAT-03");
   }
 
   emit(log, user, "TinyRTCM3 self-test end");

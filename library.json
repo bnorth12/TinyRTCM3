@@ -1,7 +1,7 @@
-﻿{
+{
   "name": "TinyRTCM3",
-  "version": "0.1.0",
-  "description": "Compact RTCM 3 frame assemble/CRC/decode/encode for ESP32 RTK pipelines. v0.1: CRC-24Q compute/verify/append/finalizeFrame + assembler + hub; Requirements + runSelfTests; 1005/1033/MSM codec APIs are Unsupported stubs; CI uses synthetic goldens only.",
+  "version": "0.5.0",
+  "description": "Compact RTCM 3 assemble/CRC/decode/encode for ESP32 RTK pipelines. v0.5 solid library: table CRC, Hub batch feed, Stats histogram, sanitize-before-emit, 1005/1006/1033 + MSM CNR summary.",
   "keywords": "rtcm, gnss, rtk, ntrip, crc24q, esp32",
   "repository": {
     "type": "git",
@@ -39,9 +39,23 @@
     {
       "name": "PassThroughHub",
       "base": "examples/PassThroughHub",
-      "files": ["PassThroughHub.ino"]
+      "files": [
+        "PassThroughHub.ino"
+      ]
+    },
+    {
+      "name": "FilteredSanitizeHub",
+      "base": "examples/FilteredSanitizeHub",
+      "files": [
+        "FilteredSanitizeHub.ino"
+      ]
+    },
+    {
+      "name": "SelfTest",
+      "base": "examples/SelfTest",
+      "files": [
+        "SelfTest.ino"
+      ]
     }
   ]
 }
-
-

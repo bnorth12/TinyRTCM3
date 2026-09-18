@@ -218,6 +218,19 @@ Status rewrite1005ToPublishIdentity(const uint8_t* in, size_t inLen, uint8_t* ou
   return encode1005(msg, out, cap, outLen);
 }
 
+Status rewrite1006ToPublishIdentity(const uint8_t* in, size_t inLen, uint8_t* out, size_t cap,
+                                    size_t* outLen) {
+  Msg1006 msg;
+  const Status st = decode1006(in, inLen, &msg);
+  if (st != Status::Ok) return st;
+  msg.stationId = kPublishStationId;
+  msg.ecefX01mm = kPublishArpEcef01mmX;
+  msg.ecefY01mm = kPublishArpEcef01mmY;
+  msg.ecefZ01mm = kPublishArpEcef01mmZ;
+  return encode1006(msg, out, cap, outLen);
+}
+
+
 Status decode1006(const uint8_t* frame, size_t len, Msg1006* out) {
   if (frame == nullptr || out == nullptr) return Status::InvalidArg;
   if (len < kRtcmMinFrameLen || frame[0] != 0xD3) return Status::InvalidArg;
@@ -338,7 +351,7 @@ Status summarizeMsmCnr(const uint8_t* frame, size_t len, MsmHeaderCnrSummary* ou
   if (msm != 4 && msm != 7) return Status::Unsupported;
 
   if (payloadLen == 0 || payloadLen > 1023) return Status::Overflow;
-  // Payload lives in frame[3..]; BitBuffer needs mutable pointer — copy.
+  // Payload lives in frame[3..]; BitBuffer needs mutable pointer â€” copy.
   uint8_t payload[1023];
   for (size_t i = 0; i < payloadLen; ++i) payload[i] = frame[3 + i];
   BitBuffer bb(payload, payloadLen);
