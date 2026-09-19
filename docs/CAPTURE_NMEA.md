@@ -48,8 +48,7 @@ EMPTY results as **`mode_or_feature_gated_candidate`**, not “unsupported on EA
 GGA/RMC/GLL/GNS (and some PQTM) contain lat/lon — keep under `raw/`, never publish unsanitized.
 
 ## Tool
-`scripts/capture_nmea_com.py` — extend with prerequisite profiles, e.g.
-`--mode default|svin|geofence|jamming` for the gated set.
+`scripts/capture_nmea_com.py` — `--mode nav-fix|jamming|geofence|svin|feature-probe|gated-all` (see [GATED_CAPTURE_MODES.md](GATED_CAPTURE_MODES.md) Tooling).
 
 ## Full gated-mode plan
 

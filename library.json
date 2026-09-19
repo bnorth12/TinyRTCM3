@@ -1,61 +1,62 @@
-{
-  "name": "TinyRTCM3",
-  "version": "0.5.0",
-  "description": "Compact RTCM 3 assemble/CRC/decode/encode for ESP32 RTK pipelines. v0.5 solid library: table CRC, Hub batch feed, Stats histogram, sanitize-before-emit, 1005/1006/1033 + MSM CNR summary.",
-  "keywords": "rtcm, gnss, rtk, ntrip, crc24q, esp32",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/bnorth12/TinyRTCM3.git"
-  },
-  "authors": [
-    {
-      "name": "Brian",
-      "url": "https://github.com/bnorth12",
-      "maintainer": true
-    }
-  ],
-  "license": "MIT",
-  "homepage": "https://github.com/bnorth12/TinyRTCM3",
-  "frameworks": "arduino",
-  "platforms": "*",
-  "headers": "TinyRTCM3.h",
-  "export": {
-    "include": [
-      "src/*",
-      "examples/*",
-      "library.properties",
-      "keywords.txt",
-      "LICENSE",
-      "README.md"
-    ],
-    "exclude": [
-      "raw",
-      "test/golden/field",
-      "scripts",
-      "docs"
-    ]
-  },
-  "examples": [
-    {
-      "name": "PassThroughHub",
-      "base": "examples/PassThroughHub",
-      "files": [
-        "PassThroughHub.ino"
-      ]
-    },
-    {
-      "name": "FilteredSanitizeHub",
-      "base": "examples/FilteredSanitizeHub",
-      "files": [
-        "FilteredSanitizeHub.ino"
-      ]
-    },
-    {
-      "name": "SelfTest",
-      "base": "examples/SelfTest",
-      "files": [
-        "SelfTest.ino"
-      ]
-    }
-  ]
+﻿{
+    "name":  "TinyRTCM3",
+    "version":  "0.5.0",
+    "description":  "Compact RTCM 3 assemble/CRC/decode/encode for ESP32 RTK pipelines. Table CRC-24Q, FrameAssembler, Hub batch feed, Stats histogram, sanitize-before-emit, 1005/1006/1033 + MSM4/7 CNR summary. Optional peer to LC29H_GNSS; not an NTRIP caster.",
+    "keywords":  "rtcm, gnss, rtk, ntrip, crc24q, esp32",
+    "repository":  {
+                       "type":  "git",
+                       "url":  "https://github.com/bnorth12/TinyRTCM3.git"
+                   },
+    "authors":  [
+                    {
+                        "name":  "Brian",
+                        "email":  "bnorth12@users.noreply.github.com",
+                        "url":  "https://github.com/bnorth12",
+                        "maintainer":  true
+                    }
+                ],
+    "license":  "MIT",
+    "homepage":  "https://github.com/bnorth12/TinyRTCM3",
+    "frameworks":  "arduino",
+    "platforms":  "*",
+    "headers":  "TinyRTCM3.h",
+    "export":  {
+                   "include":  [
+                                   "src/*",
+                                   "examples/*",
+                                   "library.properties",
+                                   "keywords.txt",
+                                   "LICENSE",
+                                   "README.md"
+                               ],
+                   "exclude":  [
+                                   "raw",
+                                   "test/golden/field",
+                                   "scripts",
+                                   "docs"
+                               ]
+               },
+    "examples":  [
+                     {
+                         "name":  "PassThroughHub",
+                         "base":  "examples/PassThroughHub",
+                         "files":  [
+                                       "PassThroughHub.ino"
+                                   ]
+                     },
+                     {
+                         "name":  "FilteredSanitizeHub",
+                         "base":  "examples/FilteredSanitizeHub",
+                         "files":  [
+                                       "FilteredSanitizeHub.ino"
+                                   ]
+                     },
+                     {
+                         "name":  "SelfTest",
+                         "base":  "examples/SelfTest",
+                         "files":  [
+                                       "SelfTest.ino"
+                                   ]
+                     }
+                 ]
 }

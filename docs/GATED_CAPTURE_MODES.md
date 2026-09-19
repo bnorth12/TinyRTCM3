@@ -69,3 +69,35 @@ Promote recipes into **LC29H_GNSS** `docs/GatedOutputs.md` (and later optional h
 - Explicit note: **PAIR062 types 0–5 only on DA/EA** — use CFGMSGRATE for ZDA/GRS/GST/GNS/GST/SVIN/EPE
 
 TinyRTCM3 remains capture/golden owner; LC29H_GNSS owns durable config semantics.
+
+---
+
+## Tooling
+
+`scripts/capture_nmea_com.py` accepts gated `--mode` profiles:
+
+| Flag | Messages | Notes |
+|------|----------|-------|
+| `--mode nav-fix` | ZDA, GNS, GRS, GST | Brief GGA fix window, then CFGMSGRATE-only discrete |
+| `--mode jamming` | PQTMJAMMINGSTATUS | Tries `PAIR074,1` and `PQTMCFGAIC,W,1` (NACKs logged) |
+| `--mode geofence` | PQTMGEOFENCESTATUS | Synthetic circle `PQTMCFGGEOFENCE` at 1.0,1.0 (not home coords) |
+| `--mode svin` | PQTMSVINSTATUS | Base+CFGSVIN MinDur=300 AccLimit=15; SAVE+PAIR023; longer capture |
+| `--mode feature-probe` | PQTMLS, PQTMSTD | CFGMSGRATE only |
+| `--mode gated-all` | all of the above in order | No factory reset between modes; reset once at end (unless `--no-factory-reset`) |
+
+Also: `--modes nav-fix jamming ...` and `--run-all-gated`. `--only` still filters the mode message list.
+
+Example:
+
+```text
+python scripts/capture_nmea_com.py --port COM8 --mode gated-all --duration 15
+```
+
+RTCM ephemeris retry:
+
+```text
+python scripts/capture_base_com.py --port COM8 --profile eph-bundle --save --settle 10 --duration 90
+```
+
+(`--profile` aliases `--run`; eph-bundle defaults enable save/reboot + long settle when omitted.)
+

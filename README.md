@@ -4,25 +4,25 @@
 
 Compact **RTCM 3** helper for Arduino / PlatformIO (ESP32 RTK pipelines).
 
-Stack with Quectel LC29H: `LC29H UART → TinyRTCM3 → app policy → NTRIP`.  
-This library is **not** a Quectel config driver — keep that in [LC29H_GNSS-Library](https://github.com/bnorth12/LC29H_GNSS-Library).
+Stack with Quectel LC29H: `LC29H UART â†’ TinyRTCM3 â†’ app policy â†’ NTRIP`.  
+This library is **not** a Quectel config driver â€” keep that in [LC29H_GNSS-Library](https://github.com/bnorth12/LC29H_GNSS-Library).
 
 **Optional peer:** usable with [LC29H_GNSS](https://github.com/bnorth12/LC29H_GNSS-Library), never required by it.
 
 **Plan:** [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
-**Contracts:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (ownership) · [docs/INTEGRATION.md](docs/INTEGRATION.md) (phased app/GNSS impact) · [docs/ICD.md](docs/ICD.md).
+**Contracts:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (ownership) Â· [docs/INTEGRATION.md](docs/INTEGRATION.md) (phased app/GNSS impact) Â· [docs/ICD.md](docs/ICD.md).
 
-## Status (v0.5.0 scaffold)
+## Status (v0.5.0 solid library)
 
 | Piece | Status |
 |-------|--------|
 | CRC-24Q + frame assembler | Implemented |
 | Passthrough hub | Implemented |
-| Bit buffer (write) | Stub |
-| 1005 decode / 1033 encode / MSM CNR | **implemented (see ICD)** — next milestone |
+| Bit buffer (read/write) | Implemented |
+| 1005 decode / 1033 encode / MSM CNR | **implemented (see ICD)** â€” next milestone |
 | Synthetic goldens | CI contract (`test/golden/synthetic/`) |
-| Field goldens | Optional; **must be sanitized** — see [docs/PRIVACY.md](docs/PRIVACY.md) |
+| Field goldens | Optional; **must be sanitized** â€” see [docs/PRIVACY.md](docs/PRIVACY.md) |
 
 ## Layout
 
@@ -58,7 +58,7 @@ python scripts/gen_synthetic_goldens.py
 
 ## License
 
-MIT — Copyright 2026 Brian
+MIT â€” Copyright 2026 Brian
 
 ## Requirements & self-test
 
@@ -74,7 +74,12 @@ Host: 	est/host/test_self_tests.cpp (GitHub Actions host-verify). Device: exampl
 
 ## ICD / requirements
 
-- [docs/ICD.md](docs/ICD.md) — proposed functional scope and interfaces
-- [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) — capability → requirement map
-- `src/TinyRtcmRequirements.h` — normative CAP/REQ catalogs for CI and self-test
+- [docs/ICD.md](docs/ICD.md) â€” proposed functional scope and interfaces
+- [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) â€” capability â†’ requirement map
+- `src/TinyRtcmRequirements.h` â€” normative CAP/REQ catalogs for CI and self-test
 
+## Publishing
+
+After HIL evidence: [docs/ARDUINO_LIBRARY_PUBLISH.md](docs/ARDUINO_LIBRARY_PUBLISH.md) (baseline tag → Arduino Library Manager).
+
+**Publish readiness:** [docs/LIBRARY_ATTRIBUTES_AUDIT.md](docs/LIBRARY_ATTRIBUTES_AUDIT.md) · [docs/ARDUINO_LIBRARY_PUBLISH.md](docs/ARDUINO_LIBRARY_PUBLISH.md)
