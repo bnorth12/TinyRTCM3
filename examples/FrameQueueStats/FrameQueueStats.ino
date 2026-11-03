@@ -10,6 +10,8 @@ static Hub hub;
 static StreamStats stats;
 static FrameQueue<8, 1030> queue;
 static DecodeView views;
+static uint32_t txDrops = 0;
+static bool decode1005On = false;
 
 static void onEmit(const uint8_t* frame, size_t len, void*) {
   const uint16_t type = messageType(frame, len);
@@ -17,25 +19,46 @@ static void onEmit(const uint8_t* frame, size_t len, void*) {
   decodeIfEnabled(&stats, frame, len, type, &views);
 }
 
+static void sinkHead() {
+  if (queue.count() == 0) return;
+  const int space = Serial1.availableForWrite();
+  uint8_t buf[1030];
+  if (space <= 0) {
+    if (queue.pull(buf, sizeof(buf)) > 0) ++txDrops;
+    return;
+  }
+  size_t n = queue.pull(buf, static_cast<size_t>(space));
+  if (n == 0) {
+    if (queue.pull(buf, sizeof(buf)) > 0) ++txDrops;
+    return;
+  }
+  if (Serial1.write(buf, n) != n) ++txDrops;
+}
+
 void setup() {
   Serial.begin(115200);
   Serial1.begin(115200);
   hub.setStats(&stats);
   hub.setEmit(onEmit, nullptr);
-  // Decode stays off until the app sets a bit. Example enables 1005 only.
+  // Runtime decode only. Not written anywhere. ASCII 't' on Serial toggles 1005.
+  decode1005On = true;
   decodeMaskSet(&stats, 1005, true);
 }
 
 void loop() {
   hub.setNowMs(millis());
   while (Serial.available()) {
-    hub.feed(static_cast<uint8_t>(Serial.read()));
+    const int raw = Serial.read();
+    if (raw < 0) break;
+    if (raw == 't') {
+      decode1005On = !decode1005On;
+      decodeMaskSet(&stats, 1005, decode1005On);
+      continue;
+    }
+    hub.feed(static_cast<uint8_t>(raw));
   }
 
-  uint8_t buf[1030];
-  // One whole frame per pass. A short budget leaves the head queued.
-  const size_t n = queue.pull(buf, sizeof(buf));
-  if (n > 0) Serial1.write(buf, n);
+  sinkHead();
 
   static uint32_t lastPrint = 0;
   if (millis() - lastPrint < 1000) return;
@@ -49,6 +72,12 @@ void loop() {
   Serial.print(queue.unhealthy() ? 1 : 0);
   Serial.print(" drops=");
   Serial.print(queue.unhealthyDropFrames());
+  Serial.print(" txDrops=");
+  Serial.print(txDrops);
+  Serial.print(" frames=");
+  Serial.print(stats.framesOk);
+  Serial.print(" decode1005=");
+  Serial.print(decode1005On ? 1 : 0);
   Serial.print(" rows=");
   Serial.println(stats.typeRowCount);
   for (size_t i = 0; i < kOnocoyRequiredCount; ++i) {

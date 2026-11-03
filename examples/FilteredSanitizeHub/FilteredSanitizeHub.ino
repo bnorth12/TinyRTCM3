@@ -9,10 +9,14 @@ using namespace tinyrtcm3;
 static Hub hub;
 static StreamStats stats;
 static SanitizeEmitCtx sanitizeCtx;
+static uint32_t txDrops = 0;
 
 static void onPublicEmit(const uint8_t* frame, size_t len, void*) {
-  // After sanitize: safe for Serial1 / NTRIP / log
-  Serial1.write(frame, len);
+  const int space = Serial1.availableForWrite();
+  if (space < static_cast<int>(len) || Serial1.write(frame, len) != len) {
+    ++txDrops;
+    return;
+  }
 }
 
 void setup() {
@@ -45,6 +49,10 @@ void loop() {
   }
   Serial.print("crcPassRows=");
   Serial.print(stats.typeRowCount);
+  Serial.print(" frames=");
+  Serial.print(stats.framesOk);
+  Serial.print(" txDrops=");
+  Serial.print(txDrops);
   Serial.print(" onocoyMissing=");
   Serial.println(missing);
 }
