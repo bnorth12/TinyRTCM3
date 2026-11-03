@@ -34,7 +34,8 @@ Quectel **PAIR/PQTM config** stays in LC29H_GNSS. TinyRTCM3 never opens a `Hardw
 | Concern | Owner | TinyRTCM3 |
 |---------|-------|-----------|
 | UART ISR / DMA / HW FIFO / baud | App or LC29H_GNSS pump | **No** |
-| Software ring / FIFO storage & overwrite policy | App or shared util | **No** (app passes bytes) |
+| UART byte ring / HW FIFO | App or LC29H_GNSS pump | **No** (app passes bytes) |
+| Whole-frame queue for a caster sink | TinyRTCM3 `FrameQueue` embedded by the app | Yes (fixed slots, no heap on push/pull). Not a UART ring. |
 | Demux NMEA (`$`) vs RTCM (`0xD3`) | Transport pump | Prefers RTCM-only bytes; demux is not its job |
 | Frame assemble, CRC-24Q, message type (DF002) | **TinyRTCM3** | Yes |
 | Filter / allowlist / drop-MSM predicates | TinyRTCM3 Policy + app | Library supplies; app chooses |
@@ -66,9 +67,13 @@ Quectel **PAIR/PQTM config** stays in LC29H_GNSS. TinyRTCM3 never opens a `Hardw
 - Pure predicate on `(messageType, frame, len)`.
 - Return `false` => drop; Hub still returns `Ok` (drop != error). See REQ-HUB-02.
 
-### 3.4 Ring-buffer (app / pump side)
+### 3.4 Rings
 
-TinyRTCM3 does **not** allocate or own the ring. Recommended loop:
+The UART byte ring stays in the app or the LC29H pump. TinyRTCM3 does **not** own that ring.
+
+`FrameQueue` (v0.6) is a separate fixed ring of **whole RTCM3 frames**. The app embeds it and calls `push` / `pull(dest, writable)`. `pull` copies one head frame only when `writable` is at least that frame's length.
+
+Recommended UART loop:
 
 1. ISR/DMA -> ring (lock-free or critical section per platform).
 2. Task pops bytes -> optional demux.

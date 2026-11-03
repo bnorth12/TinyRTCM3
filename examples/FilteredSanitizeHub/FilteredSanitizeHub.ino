@@ -27,10 +27,24 @@ void setup() {
 }
 
 void loop() {
+  hub.setNowMs(millis());
   while (Serial.available()) {
     const int n = Serial.available();
     uint8_t buf[64];
     const int got = Serial.readBytes(reinterpret_cast<char*>(buf), n > 64 ? 64 : n);
     if (got > 0) hub.feed(buf, static_cast<size_t>(got), nullptr);
   }
+  static uint32_t last = 0;
+  if (millis() - last < 1000) return;
+  last = millis();
+  CoverageFlag flags[kOnocoyRequiredCount];
+  coverageCheck(&stats, millis(), kDefaultLateAfterMs, flags, kOnocoyRequiredCount);
+  uint8_t missing = 0;
+  for (size_t i = 0; i < kOnocoyRequiredCount; ++i) {
+    if (flags[i].missing) ++missing;
+  }
+  Serial.print("crcPassRows=");
+  Serial.print(stats.typeRowCount);
+  Serial.print(" onocoyMissing=");
+  Serial.println(missing);
 }

@@ -11,6 +11,8 @@
 #include "TinyRtcmPolicy.h"
 #include "TinyRtcmRegistry.h"
 #include "TinyRtcmStats.h"
+#include "TinyRtcmFrameQueue.h"
+#include "TinyRtcmDecode.h"
 #include "TinyRtcmSanitize.h"
 #include "TinyRtcmNtripSink.h"
 #include "TinyRtcmVerify.h"

@@ -9,7 +9,9 @@
 Every **capability** (CAP-*) documents one or more **requirements** (REQ-*)
 via Capability.reqIds. Do not add a capability without requirements.
 
-Library version: **0.5.0** (kVersion* in the header).
+Library version: **0.6.0** (kVersion* in the header).
+
+v0.6 adds CAP-FRAMEQUEUE, CAP-DECODE-MASK, CAP-CODEC-1230, and extends CAP-STATS (REQ-STAT-04/05) and CAP-CODEC-MSM (REQ-COD-MSM-H).
 
 | Capability | Implemented | Notes |
 |------------|-------------|-------|

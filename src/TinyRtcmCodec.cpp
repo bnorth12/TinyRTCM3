@@ -1,6 +1,7 @@
 #include "TinyRtcmCodec.h"
 #include "TinyRtcmBitBuffer.h"
 #include "TinyRtcmCrc24q.h"
+#include "TinyRtcmPolicy.h"
 
 namespace tinyrtcm3 {
 namespace {
@@ -364,7 +365,8 @@ Status summarizeMsmCnr(const uint8_t* frame, size_t len, MsmHeaderCnrSummary* ou
   st = bb.getBits(12, &stn);
   if (st != Status::Ok) return st;
   // GNSS epoch is 30 bits for all MSM (GLONASS packs DOW+TOD into 30).
-  st = bb.getBits(30, &skip);
+  uint32_t epoch = 0;
+  st = bb.getBits(30, &epoch);
   if (st != Status::Ok) return st;
   // multiple(1)+IODS(3)+reserved(7)+clock(2)+extClock(2)+divFree(1)+smooth(3) = 19
   st = bb.getBits(19, &skip);
@@ -441,11 +443,112 @@ Status summarizeMsmCnr(const uint8_t* frame, size_t len, MsmHeaderCnrSummary* ou
   out->stationId = static_cast<uint16_t>(stn);
   out->satCount = nsat;
   out->sigCount = nsig;
+  out->epoch30 = epoch;
   if (counted == 0) {
     out->meanCnr01dBHz = 0xFFFF;
   } else {
     out->meanCnr01dBHz = static_cast<uint16_t>(sum01 / counted);
   }
+  return Status::Ok;
+}
+
+Status decodeMsmHeader(const uint8_t* frame, size_t len, MsmHeaderView* out) {
+  if (frame == nullptr || out == nullptr) return Status::InvalidArg;
+  if (len < kRtcmMinFrameLen || frame[0] != 0xD3) return Status::InvalidArg;
+  const size_t payloadLen =
+      (static_cast<size_t>(frame[1] & 0x03u) << 8) | static_cast<size_t>(frame[2]);
+  if (len != payloadLen + 6u) return Status::InvalidArg;
+  if (!frameCrcOk(frame, len)) return Status::BadCrc;
+  const uint16_t mt = messageType(frame, len);
+  if (!policyIsMsmWide(mt)) return Status::InvalidArg;
+  if (payloadLen < 22 || payloadLen > 1023) return Status::Overflow;
+
+  uint8_t payload[32];
+  const size_t copy = payloadLen < sizeof(payload) ? payloadLen : sizeof(payload);
+  for (size_t i = 0; i < copy; ++i) payload[i] = frame[3 + i];
+  BitBuffer bb(payload, copy);
+  bb.resetRead();
+
+  uint32_t msg = 0, stn = 0, epoch = 0, skip = 0;
+  Status st = bb.getBits(12, &msg);
+  if (st != Status::Ok) return st;
+  if (msg != mt) return Status::InvalidArg;
+  st = bb.getBits(12, &stn);
+  if (st != Status::Ok) return st;
+  st = bb.getBits(30, &epoch);
+  if (st != Status::Ok) return st;
+  st = bb.getBits(19, &skip);
+  if (st != Status::Ok) return st;
+
+  uint32_t satHi = 0, satLo = 0, sigMask = 0;
+  st = bb.getBits(32, &satHi);
+  if (st != Status::Ok) return st;
+  st = bb.getBits(32, &satLo);
+  if (st != Status::Ok) return st;
+  st = bb.getBits(32, &sigMask);
+  if (st != Status::Ok) return st;
+
+  auto pop32 = [](uint32_t x) -> uint8_t {
+    uint8_t n = 0;
+    while (x) {
+      n = static_cast<uint8_t>(n + (x & 1u));
+      x >>= 1;
+    }
+    return n;
+  };
+  out->messageType = mt;
+  out->stationId = static_cast<uint16_t>(stn);
+  out->epoch30 = epoch;
+  out->satCount = static_cast<uint8_t>(pop32(satHi) + pop32(satLo));
+  out->sigCount = pop32(sigMask);
+  return Status::Ok;
+}
+
+Status decode1230(const uint8_t* frame, size_t len, Msg1230* out) {
+  if (frame == nullptr || out == nullptr) return Status::InvalidArg;
+  if (len < kRtcmMinFrameLen || frame[0] != 0xD3) return Status::InvalidArg;
+  const size_t payloadLen =
+      (static_cast<size_t>(frame[1] & 0x03u) << 8) | static_cast<size_t>(frame[2]);
+  if (len != payloadLen + 6u) return Status::InvalidArg;
+  if (!frameCrcOk(frame, len)) return Status::BadCrc;
+  if (messageType(frame, len) != 1230) return Status::InvalidArg;
+  if (payloadLen == 0 || payloadLen > 64) return Status::Overflow;
+
+  uint8_t payload[64];
+  for (size_t i = 0; i < payloadLen; ++i) payload[i] = frame[3 + i];
+  BitBuffer bb(payload, payloadLen);
+  bb.resetRead();
+
+  uint32_t msg = 0, stn = 0, ind = 0, skip = 0;
+  Status st = bb.getBits(12, &msg);
+  if (st != Status::Ok) return st;
+  if (msg != 1230) return Status::InvalidArg;
+  st = bb.getBits(12, &stn);
+  if (st != Status::Ok) return st;
+  st = bb.getBits(1, &ind);
+  if (st != Status::Ok) return st;
+  st = bb.getBits(3, &skip);
+  if (st != Status::Ok) return st;
+
+  Msg1230 decoded;
+  decoded.stationId = static_cast<uint16_t>(stn);
+  decoded.biasIndicator = static_cast<uint8_t>(ind);
+  for (int j = 0; j < 4; ++j) {
+    uint32_t valid = 0;
+    st = bb.getBits(1, &valid);
+    if (st != Status::Ok) return st;
+    if (!valid) continue;
+    uint32_t raw = 0;
+    st = bb.getBits(16, &raw);
+    if (st != Status::Ok) return st;
+    decoded.validMask = static_cast<uint8_t>(decoded.validMask | (1u << j));
+    if (raw & 0x8000u) {
+      decoded.bias002m[j] = static_cast<int16_t>(static_cast<int32_t>(raw) - 65536);
+    } else {
+      decoded.bias002m[j] = static_cast<int16_t>(raw);
+    }
+  }
+  *out = decoded;
   return Status::Ok;
 }
 

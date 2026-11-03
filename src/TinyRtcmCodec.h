@@ -46,6 +46,25 @@ struct MsmHeaderCnrSummary {
   uint8_t satCount = 0;
   uint8_t sigCount = 0;
   uint16_t meanCnr01dBHz = 0xFFFF;  // 0xFFFF = N/A
+  uint32_t epoch30 = 0;             // DF004, 30 bits
+};
+
+// Any MSM 1071-1137 header. Stops after the satellite and signal masks.
+struct MsmHeaderView {
+  uint16_t messageType = 0;
+  uint16_t stationId = 0;
+  uint32_t epoch30 = 0;
+  uint8_t satCount = 0;
+  uint8_t sigCount = 0;
+};
+
+// RTCM 1230 GLONASS code-phase biases. bias002m is signed 0.02 m units.
+// validMask bit 0..3 matches L1 C/A, L1 P, L2 C/A, L2 P.
+struct Msg1230 {
+  uint16_t stationId = 0;
+  uint8_t biasIndicator = 0;
+  uint8_t validMask = 0;
+  int16_t bias002m[4] = {};
 };
 
 // --- 1005 (CAP-CODEC-1005) ---------------------------------------------------
@@ -67,5 +86,10 @@ Status encode1033(const Msg1033& msg, uint8_t* out, size_t cap, size_t* outLen);
 
 // --- MSM summary (CAP-CODEC-MSM) ---------------------------------------------
 Status summarizeMsmCnr(const uint8_t* frame, size_t len, MsmHeaderCnrSummary* out);
+// Cheap header for any MSM 1071-1137 (subtype 1..7). No CNR walk.
+Status decodeMsmHeader(const uint8_t* frame, size_t len, MsmHeaderView* out);
+
+// --- 1230 decode only (CAP-CODEC-1230). Encode stays Unsupported. -----------
+Status decode1230(const uint8_t* frame, size_t len, Msg1230* out);
 
 }  // namespace tinyrtcm3

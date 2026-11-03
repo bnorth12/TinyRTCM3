@@ -13,16 +13,20 @@ This library is **not** a Quectel config driver â€” keep that in [LC29H_GNS
 
 **Contracts:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (ownership) Â· [docs/INTEGRATION.md](docs/INTEGRATION.md) (phased app/GNSS impact) Â· [docs/ICD.md](docs/ICD.md).
 
-## Status (v0.5.0 solid library)
+## Status (v0.6.0)
+
+v0.6 adds a fixed whole-frame `FrameQueue` (not a UART byte ring), a 48-row per-type stats table updated only on CRC-pass, Onocoy required-set coverage (missing/late), and a RAM-only decode mask (default off) with views for 1005/1006, 1033, MSM headers, and 1230. Same-type 1005/1006/1230 replacements do not mark the queue unhealthy. MSM pressure drops a whole epoch. The library stays an optional peer of LC29H_GNSS.
 
 | Piece | Status |
 |-------|--------|
 | CRC-24Q + frame assembler | Implemented |
 | Passthrough hub | Implemented |
+| Whole-frame queue + drop-rate unhealthy | Implemented (v0.6) |
+| Per-type stats + Onocoy coverage + decode mask | Implemented (v0.6, mask is RAM only) |
 | Bit buffer (read/write) | Implemented |
-| 1005 decode / 1033 encode / MSM CNR | **implemented (see ICD)** â€” next milestone |
+| 1005/1006/1033, MSM header, 1230 decode | Implemented |
 | Synthetic goldens | CI contract (`test/golden/synthetic/`) |
-| Field goldens | Optional; **must be sanitized** â€” see [docs/PRIVACY.md](docs/PRIVACY.md) |
+| Field goldens | Optional; **must be sanitized** — see [docs/PRIVACY.md](docs/PRIVACY.md) |
 
 ## Layout
 

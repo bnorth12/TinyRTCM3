@@ -9,6 +9,8 @@
 #include "TinyRtcmRegistry.h"
 #include "TinyRtcmStats.h"
 #include "TinyRtcmHub.h"
+#include "TinyRtcmFrameQueue.h"
+#include "TinyRtcmDecode.h"
 
 namespace tinyrtcm3 {
 namespace {
@@ -334,6 +336,142 @@ int runSelfTests(VerifyReport* report, VerifyLogFn log, void* user) {
          hub2.feed(f5, n5, nullptr) == Status::Ok && hst.type1005 == 1;
     if (ok) pass(r, log, user, "ok REQ-STAT-03 type histogram");
     else fail(r, log, user, "FAIL REQ-STAT-03");
+  }
+
+  // v0.6 frame queue, type table, coverage, decode mask, 1230, MSM header
+  {
+    FrameQueue<3, 64> q;
+    uint8_t a[16] = {};
+    uint8_t b[16] = {};
+    a[0] = 0xD3;
+    a[3] = static_cast<uint8_t>(1033 >> 4);
+    a[4] = static_cast<uint8_t>((1033 & 0x0F) << 4);
+    for (int i = 0; i < 12; ++i) a[i + 0] = a[i];
+    // length 12 frames
+    bool ok = q.push(a, 12, 1033) && q.push(a, 12, 1008) && q.count() == 2;
+    uint8_t dest[64];
+    ok = ok && q.pull(dest, 4) == 0 && q.pull(dest, 12) == 12 && q.count() == 1;
+    ok = ok && q.pull(dest, 12) == 12 && q.empty();
+    if (ok) pass(r, log, user, "ok REQ-FQ-01 pull whole frame by writable");
+    else fail(r, log, user, "FAIL REQ-FQ-01 pull");
+
+    auto stamp = [](uint8_t* f, uint16_t type, uint32_t epoch) {
+      for (int i = 0; i < 16; ++i) f[i] = 0;
+      f[0] = 0xD3;
+      f[3] = static_cast<uint8_t>(type >> 4);
+      f[4] = static_cast<uint8_t>((type & 0x0F) << 4);
+      f[6] = static_cast<uint8_t>((epoch >> 22) & 0xFF);
+      f[7] = static_cast<uint8_t>((epoch >> 14) & 0xFF);
+      f[8] = static_cast<uint8_t>((epoch >> 6) & 0xFF);
+      f[9] = static_cast<uint8_t>((epoch & 0x3F) << 2);
+    };
+    FrameQueue<3, 64> qm;
+    stamp(a, 1077, 100);
+    stamp(b, 1087, 5);
+    uint8_t c[16];
+    stamp(c, 1097, 7);
+    ok = qm.push(a, 12, 1077) && qm.push(b, 12, 1087) && qm.push(c, 12, 1097) && qm.count() == 3;
+    ok = ok && !qm.push(a, 12, 1077) && qm.empty();
+    ok = ok && qm.drops().byMsmEpoch >= 4;
+    if (ok) pass(r, log, user, "ok REQ-FQ-02 drop whole MSM epoch");
+    else fail(r, log, user, "FAIL REQ-FQ-02 epoch drop");
+
+    FrameQueue<3, 64> qo;
+    stamp(a, 1077, 1);
+    stamp(b, 1087, 2);
+    stamp(c, 1033, 0);
+    ok = qo.push(a, 12, 1077) && qo.push(b, 12, 1087) && qo.push(c, 12, 1033);
+    stamp(a, 1077, 99);
+    ok = ok && qo.push(a, 12, 1077) && qo.count() == 2;
+    ok = ok && qo.pull(dest, 12) == 12 && dest[3] == static_cast<uint8_t>(1033 >> 4);
+    ok = ok && qo.pull(dest, 12) == 12 && messageType(dest, 12) == 1077;
+    if (ok) pass(r, log, user, "ok REQ-FQ-02 keep closed epoch drop then new MSM");
+    else fail(r, log, user, "FAIL REQ-FQ-02 older epoch");
+
+    FrameQueue<2, 64> qp;
+    stamp(a, 1077, 3);
+    stamp(b, 1087, 4);
+    ok = qp.push(a, 12, 1077) && qp.push(b, 12, 1087);
+    Msg1005 m5;
+    m5.stationId = 4;
+    m5.ecefX01mm = kPublishArpEcef01mmX;
+    uint8_t f5[64];
+    size_t n5 = 0;
+    ok = ok && encode1005(m5, f5, sizeof(f5), &n5) == Status::Ok && n5 <= 64;
+    ok = ok && qp.push(f5, n5, 1005) && qp.count() == 1 && qp.pull(dest, 64) == n5;
+    ok = ok && qp.push(f5, n5, 1005) && qp.push(f5, n5, 1005) && qp.count() == 1;
+    ok = ok && qp.drops().byReplacedProtected == 1 && !qp.unhealthy();
+    ok = ok && !qp.push(a, 80, 1077) && qp.drops().byOversize >= 1;
+    qp.setConfig(FrameQueueConfig{4, 2});
+    ok = ok && !qp.unhealthy();
+    qp.push(a, 80, 1077);
+    qp.push(a, 0, 1077);
+    ok = ok && qp.unhealthy();
+    qp.clearUnhealthy();
+    ok = ok && !qp.unhealthy();
+    if (ok) pass(r, log, user, "ok REQ-FQ-02/03 protected keep + unhealthy window");
+    else fail(r, log, user, "FAIL REQ-FQ-02/03 protected");
+
+    StreamStats ts;
+    statsOnCrcPass(&ts, 1005, 20, 1000);
+    statsOnCrcPass(&ts, 1005, 20, 2500);
+    const TypeRow* row = statsFindTypeConst(&ts, 1005);
+    ok = row != nullptr && row->count == 2 && row->maxGapMs == 1500 && row->bytesPerSec == 26;
+    CoverageFlag flags[kOnocoyRequiredCount];
+    coverageCheck(&ts, 2500, kDefaultLateAfterMs, flags, kOnocoyRequiredCount);
+    ok = ok && flags[0].messageType == 1005 && !flags[0].missing && !flags[0].late;
+    ok = ok && flags[1].messageType == 1033 && flags[1].missing;
+    coverageCheck(&ts, 2500 + 20000, kDefaultLateAfterMs, flags, kOnocoyRequiredCount);
+    ok = ok && !flags[0].missing && flags[0].late;
+    coverageCheck(&ts, 0, kDefaultLateAfterMs, flags, kOnocoyRequiredCount);
+    ok = ok && !flags[0].late;
+    bool maskOff = true;
+    for (size_t i = 0; i < sizeof(ts.decodeMask); ++i) {
+      if (ts.decodeMask[i] != 0) maskOff = false;
+    }
+    decodeMaskSet(&ts, 1005, true);
+    ok = ok && maskOff && decodeMaskGet(&ts, 1005) && !decodeMaskGet(&ts, 1006);
+    DecodeView view;
+    ok = ok && decodeIfEnabled(&ts, f5, n5, 1005, &view) == Status::Ok && view.has1005 &&
+         view.arp1005.stationId == 4;
+    decodeMaskSet(&ts, 1005, false);
+    DecodeView view2;
+    ok = ok && decodeIfEnabled(&ts, f5, n5, 1005, &view2) == Status::Ok && !view2.has1005;
+    if (ok) pass(r, log, user, "ok REQ-STAT-04/05 REQ-DEC-01 type table coverage mask");
+    else fail(r, log, user, "FAIL REQ-STAT-04/05 or REQ-DEC-01");
+
+    uint8_t p1230[32] = {};
+    BitBuffer b1230(p1230, sizeof(p1230));
+    b1230.resetWrite();
+    ok = b1230.putBits(1230, 12) == Status::Ok && b1230.putBits(9, 12) == Status::Ok &&
+         b1230.putBits(1, 1) == Status::Ok && b1230.putBits(0, 3) == Status::Ok &&
+         b1230.putBits(1, 1) == Status::Ok && b1230.putBits(0xFFFBu, 16) == Status::Ok &&
+         b1230.putBits(0, 1) == Status::Ok && b1230.putBits(0, 1) == Status::Ok &&
+         b1230.putBits(0, 1) == Status::Ok;
+    uint8_t f1230[64];
+    size_t n1230 = 0;
+    Msg1230 g;
+    ok = ok && finalizeFrame(p1230, b1230.byteLength(), f1230, sizeof(f1230), &n1230) == Status::Ok &&
+         decode1230(f1230, n1230, &g) == Status::Ok && g.stationId == 9 && g.biasIndicator == 1 &&
+         g.validMask == 0x1 && g.bias002m[0] == -5;
+    if (ok) pass(r, log, user, "ok REQ-COD-1230-D decode");
+    else fail(r, log, user, "FAIL REQ-COD-1230-D");
+
+    uint8_t msmPayload[64] = {};
+    BitBuffer mb(msmPayload, sizeof(msmPayload));
+    mb.resetWrite();
+    auto putN = [&mb](uint32_t v, uint8_t n) -> bool { return mb.putBits(v, n) == Status::Ok; };
+    bool mok = putN(1137, 12) && putN(11, 12) && putN(0x15555u, 30) && putN(0, 19) &&
+               putN(0x80000000u, 32) && putN(0, 32) && putN(0x80000000u, 32);
+    uint8_t msmFrame[96];
+    size_t mn = 0;
+    MsmHeaderView mh;
+    mok = mok && finalizeFrame(msmPayload, mb.byteLength(), msmFrame, sizeof(msmFrame), &mn) ==
+                     Status::Ok &&
+          decodeMsmHeader(msmFrame, mn, &mh) == Status::Ok && mh.messageType == 1137 &&
+          mh.stationId == 11 && mh.epoch30 == 0x15555u && mh.satCount == 1 && mh.sigCount == 1;
+    if (mok) pass(r, log, user, "ok REQ-COD-MSM-H header");
+    else fail(r, log, user, "FAIL REQ-COD-MSM-H");
   }
 
   emit(log, user, "TinyRTCM3 self-test end");
