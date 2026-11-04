@@ -7,22 +7,26 @@ Compact **RTCM 3** helper for Arduino / PlatformIO (ESP32 RTK pipelines).
 Stack with Quectel LC29H: `LC29H UART â†’ TinyRTCM3 â†’ app policy â†’ NTRIP`.  
 This library is **not** a Quectel config driver â€” keep that in [LC29H_GNSS-Library](https://github.com/bnorth12/LC29H_GNSS-Library).
 
-**Optional peer:** usable with [LC29H_GNSS](https://github.com/bnorth12/LC29H_GNSS-Library), never required by it.
+**Independent library:** TinyRTCM3 and [LC29H_GNSS](https://github.com/bnorth12/LC29H_GNSS-Library) do not depend on each other in either direction. Neither includes the other, and each library's examples use only that library. Applications that use both (for example the ESP32-S3 LC29H base station) wire LC29H output frames into TinyRTCM3 in app code.
 
 **Plan:** [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
 **Contracts:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (ownership) Â· [docs/INTEGRATION.md](docs/INTEGRATION.md) (phased app/GNSS impact) Â· [docs/ICD.md](docs/ICD.md).
 
-## Status (v0.5.0 solid library)
+## Status (v0.6.0)
+
+v0.6 adds a fixed whole-frame `FrameQueue` (not a UART byte ring), a 48-row per-type stats table updated only on CRC-pass, Onocoy required-set coverage (missing/late), and a RAM-only decode mask (default off) with views for 1005/1006, 1033, MSM headers, and 1230. Same-type 1005/1006/1230 replacements do not mark the queue unhealthy. MSM pressure drops a whole epoch. The library stays independent of LC29H_GNSS.
 
 | Piece | Status |
 |-------|--------|
 | CRC-24Q + frame assembler | Implemented |
 | Passthrough hub | Implemented |
+| Whole-frame queue + drop-rate unhealthy | Implemented (v0.6) |
+| Per-type stats + Onocoy coverage + decode mask | Implemented (v0.6, mask is RAM only) |
 | Bit buffer (read/write) | Implemented |
-| 1005 decode / 1033 encode / MSM CNR | **implemented (see ICD)** â€” next milestone |
+| 1005/1006/1033, MSM header, 1230 decode | Implemented |
 | Synthetic goldens | CI contract (`test/golden/synthetic/`) |
-| Field goldens | Optional; **must be sanitized** â€” see [docs/PRIVACY.md](docs/PRIVACY.md) |
+| Field goldens | Optional; **must be sanitized** — see [docs/PRIVACY.md](docs/PRIVACY.md) |
 
 ## Layout
 

@@ -1,5 +1,7 @@
 ﻿# TinyRTCM3 — library attributes / publish readiness audit
 
+Package version is **0.6.0** as of 2026-11-02. The table below is the 2026-09-18 v0.5 audit and is historical.
+
 **Date:** 2026-09-18 CT (BNLaptop)  
 **Verdict:** Packaging scaffold is mostly ready; **truth/docs/CI/registry** are behind before Arduino Library Manager submit. Base Station already consumes the solid core (assembler+CRC+1005+MSM CNR).
 

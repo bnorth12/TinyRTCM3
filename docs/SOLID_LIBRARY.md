@@ -1,5 +1,7 @@
 # TinyRTCM3 — Solid Library Gate (v0.5)
 
+v0.6.0 (2026-11-02) keeps this gate and adds FrameQueue, the per-type stats table, Onocoy coverage, a RAM-only decode mask, MSM header decode, and 1230 decode. The v0.5 decisions below stay historical.
+
 **Status:** Active execution (2026-09-18)  
 **Scope:** TinyRTCM3 in-repo only. No LC29H_GNSS / Base Station edits.  
 **Re-evaluate** after this gate before any peer/product CRC or Hub integration.

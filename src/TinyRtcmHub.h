@@ -24,6 +24,8 @@ class Hub {
     emitCtx_ = ctx;
   }
   void setStats(StreamStats* s) { stats_ = s; }
+  // App clock. 0 skips lastSeen / gap / rate on the type table.
+  void setNowMs(uint32_t nowMs) { nowMs_ = nowMs; }
 
   Status feed(uint8_t b) {
     statsOnByte(stats_);
@@ -35,6 +37,8 @@ class Hub {
       statsOnStatus(stats_, st, false, 0);
       return st;
     }
+    // Type table counts every CRC-pass, including frames the filter drops.
+    statsOnCrcPass(stats_, view.messageType, n, nowMs_);
     if (filter_ && !filter_(view.messageType, frame_, n, filterCtx_)) {
       statsOnStatus(stats_, Status::Ok, true, view.messageType);
       return Status::Ok;
@@ -65,6 +69,7 @@ class Hub {
   Emit emit_ = nullptr;
   void* emitCtx_ = nullptr;
   StreamStats* stats_ = nullptr;
+  uint32_t nowMs_ = 0;
 };
 
 }  // namespace tinyrtcm3

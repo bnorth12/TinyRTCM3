@@ -1,6 +1,6 @@
 ﻿#######################################
 # Syntax Coloring Map for TinyRTCM3
-# v0.5: CRC/assembler/Hub/codec 1005-1006-1033 + MSM CNR summary
+# v0.6: FrameQueue, per-type stats, Onocoy coverage, decode mask, 1230
 #######################################
 
 #######################################
@@ -17,6 +17,14 @@ Msg1006	KEYWORD1
 Msg1033	KEYWORD1
 MsmHeaderCnrSummary	KEYWORD1
 StreamStats	KEYWORD1
+TypeRow	KEYWORD1
+CoverageFlag	KEYWORD1
+FrameQueue	KEYWORD1
+DropCounters	KEYWORD1
+DropReason	KEYWORD1
+DecodeView	KEYWORD1
+MsmHeaderView	KEYWORD1
+Msg1230	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
@@ -32,6 +40,17 @@ encode1006	KEYWORD2
 decode1033	KEYWORD2
 encode1033	KEYWORD2
 summarizeMsmCnr	KEYWORD2
+decodeMsmHeader	KEYWORD2
+decode1230	KEYWORD2
+statsOnCrcPass	KEYWORD2
+coverageCheck	KEYWORD2
+decodeMaskSet	KEYWORD2
+decodeMaskGet	KEYWORD2
+decodeIfEnabled	KEYWORD2
+push	KEYWORD2
+pull	KEYWORD2
+unhealthy	KEYWORD2
+setNowMs	KEYWORD2
 rewrite1005ToPublishIdentity	KEYWORD2
 rewrite1006ToPublishIdentity	KEYWORD2
 putBits	KEYWORD2

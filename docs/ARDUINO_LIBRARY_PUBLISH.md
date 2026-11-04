@@ -28,9 +28,9 @@
 4. Verify in Arduino IDE / `arduino-cli lib search TinyRTCM3`.
 
 ## Consumers
-- Base Station should prefer Library Manager / PlatformIO registry once published; keep optional peer (never required by LC29H_GNSS).
+- Base Station should prefer Library Manager / PlatformIO registry once published; keep the two libraries independent (no dependency either way).
 - Document the minimum Tiny version in Base Station README when cutting 0.3.0.
 
 ## Related libs (same path)
-- [LC29H_GNSS-Library](https://github.com/bnorth12/LC29H_GNSS-Library) — already public; keep Tiny optional peer only.
+- [LC29H_GNSS-Library](https://github.com/bnorth12/LC29H_GNSS-Library) — already public; independent of TinyRTCM3; no dependency either way.
 - Base Station app is not an Arduino Library Manager package; it *depends* on the published libs.

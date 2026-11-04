@@ -17,7 +17,7 @@ namespace tinyrtcm3 {
 // =============================================================================
 
 static constexpr uint16_t kVersionMajor = 0;
-static constexpr uint16_t kVersionMinor = 5;
+static constexpr uint16_t kVersionMinor = 6;
 static constexpr uint16_t kVersionPatch = 0;
 
 // --- Individual requirement (shall-statement) --------------------------------
@@ -155,6 +155,32 @@ static constexpr Requirement kRequirements[] = {
     {"REQ-NTRIP-01",
      "NTRIP/TCP/TLS shall remain application-owned; library may expose only a sink stub.",
      true, "INtripSink stub documents the boundary"},
+
+    // v0.6 frame queue, type table, coverage, decode mask
+    {"REQ-STAT-04",
+     "Stream stats shall keep a fixed per-type table (count, lastSeen, bytes/s, max gap) updated only on CRC-pass.",
+     true, "48 rows; nowMs 0 skips time fields"},
+    {"REQ-STAT-05",
+     "The library shall flag the Onocoy required set missing or late.",
+     true, "1005 1033 1077 1087 1097 1117 1127 1137 1230"},
+    {"REQ-FQ-01",
+     "The library shall queue whole RTCM3 frames in a fixed ring and pull only a frame that fits the caller byte budget.",
+     true, "no heap on push/pull"},
+    {"REQ-FQ-02",
+     "Under pressure the queue shall keep 1005/1006/1230 and drop whole MSM epochs rather than a partial epoch.",
+     true, nullptr},
+    {"REQ-FQ-03",
+     "The queue shall expose drop counters by reason and a polled drop-rate unhealthy flag.",
+     true, "ReplacedProtected is excluded from the window"},
+    {"REQ-COD-MSM-H",
+     "The library shall decode an MSM header (type, station, epoch, sat count, sig count) for MSM 1071-1137.",
+     true, "no CNR walk"},
+    {"REQ-COD-1230-D",
+     "The library shall decode RTCM 1230 GLONASS code-phase biases.",
+     true, "decode only; encode stays out of v1"},
+    {"REQ-DEC-01",
+     "Decode enablement shall be a RAM-only mask defaulting to all off.",
+     true, "library never persists the mask"},
 };
 
 static constexpr size_t kRequirementCount =
@@ -187,7 +213,11 @@ static constexpr const char* kReqIds_BitRead[] = {"REQ-BIT-02", nullptr};
 static constexpr const char* kReqIds_Hub[] = {"REQ-HUB-01", "REQ-HUB-02", "REQ-HUB-03", nullptr};
 static constexpr const char* kReqIds_Policy[] = {"REQ-POL-01", "REQ-POL-02", "REQ-POL-03", nullptr};
 static constexpr const char* kReqIds_Registry[] = {"REQ-REG-01", "REQ-REG-02", nullptr};
-static constexpr const char* kReqIds_Stats[] = {"REQ-STAT-01", "REQ-STAT-02", "REQ-STAT-03", nullptr};
+static constexpr const char* kReqIds_Stats[] = {
+    "REQ-STAT-01", "REQ-STAT-02", "REQ-STAT-03", "REQ-STAT-04", "REQ-STAT-05", nullptr};
+static constexpr const char* kReqIds_FrameQueue[] = {
+    "REQ-FQ-01", "REQ-FQ-02", "REQ-FQ-03", nullptr};
+static constexpr const char* kReqIds_DecodeMask[] = {"REQ-DEC-01", nullptr};
 static constexpr const char* kReqIds_Codec1005[] = {
     "REQ-COD-1005-D", "REQ-COD-1005-E", "REQ-COD-1005-R", nullptr};
 static constexpr const char* kReqIds_Codec1006[] = {
@@ -195,7 +225,8 @@ static constexpr const char* kReqIds_Codec1006[] = {
 static constexpr const char* kReqIds_Codec1033[] = {
     "REQ-COD-1033-D", "REQ-COD-1033-E", nullptr};
 static constexpr const char* kReqIds_CodecMsm[] = {
-    "REQ-COD-MSM-S", "REQ-COD-MSM-X", nullptr};
+    "REQ-COD-MSM-S", "REQ-COD-MSM-H", "REQ-COD-MSM-X", nullptr};
+static constexpr const char* kReqIds_Codec1230[] = {"REQ-COD-1230-D", nullptr};
 static constexpr const char* kReqIds_Sanitize[] = {"REQ-SAN-01", "REQ-SAN-02", "REQ-SAN-03", nullptr};
 static constexpr const char* kReqIds_Goldens[] = {"REQ-GOLD-01", "REQ-GOLD-02", nullptr};
 static constexpr const char* kReqIds_SelfTest[] = {"REQ-VER-01", "REQ-VER-02", "REQ-VER-03", nullptr};
@@ -231,7 +262,13 @@ static constexpr Capability kCapabilities[] = {
      kReqIds_Registry, nullptr},
     {"CAP-STATS", "Stream statistics",
      "Lightweight counters for field bring-up and soak (CRC fails, drops, throughput).", true,
-     kReqIds_Stats, nullptr},
+     kReqIds_Stats, "fixed type table + Onocoy coverage"},
+    {"CAP-FRAMEQUEUE", "Whole-frame queue",
+     "Fixed ring of RTCM3 frames for a caster sink. Pulls only a frame that fits writable bytes.",
+     true, kReqIds_FrameQueue, "not the UART byte ring; app embeds the object"},
+    {"CAP-DECODE-MASK", "Runtime decode mask",
+     "RAM-only per-type decode enable. Default off. Views for 1005/1006/1033/MSM header/1230.",
+     true, kReqIds_DecodeMask, "never persisted"},
     {"CAP-CODEC-1005", "RTCM 1005 codec",
      "Station ARP decode/encode and privacy rewrite for public goldens / NTRIP identity.", true, kReqIds_Codec1005, "decode/encode/rewrite 1005 met"},
     {"CAP-CODEC-1006", "RTCM 1006 codec",
@@ -242,7 +279,10 @@ static constexpr Capability kCapabilities[] = {
      true, kReqIds_Codec1033, "encode/decode + sanitized synthetic golden"},
     {"CAP-CODEC-MSM", "MSM header+CNR summary",
      "Quality glance at MSM4/7 without storing full observation cells (v1 non-goal: encode MSM).",
-     true, kReqIds_CodecMsm, "MSM4/7 header+mean CNR; encode MSM out of scope"},
+     true, kReqIds_CodecMsm, "MSM header for 1071-1137; MSM4/7 mean CNR; encode MSM out of scope"},
+    {"CAP-CODEC-1230", "RTCM 1230 decode",
+     "GLONASS code-phase bias glance for Onocoy coverage. Encode is out of scope.",
+     true, kReqIds_Codec1230, "decode only"},
     {"CAP-SANITIZE", "Location sanitization",
      "Keep real farm/shop ECEF and 1033 strings out of public artifacts.", true, kReqIds_Sanitize,
      "1005/1006 rewrite; 1033 sanitized; sanitizeBeforeEmit"},
@@ -287,6 +327,9 @@ static constexpr bool kCapCodec1005 = true;
 static constexpr bool kCapCodec1006 = true;
 static constexpr bool kCapCodec1033 = true;
 static constexpr bool kCapCodecMsm = true;
+static constexpr bool kCapCodec1230 = true;
+static constexpr bool kCapFrameQueue = true;
+static constexpr bool kCapDecodeMask = true;
 static constexpr bool kCapSanitize = true;
 static constexpr bool kCapGoldens = true;
 static constexpr bool kCapSelfTest = true;

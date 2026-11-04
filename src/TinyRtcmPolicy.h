@@ -16,6 +16,14 @@ inline bool policyIsMsmType(uint16_t messageType) {
   return messageType >= 1071 && messageType <= 1127;
 }
 
+// MSM 1071-1137 subtypes 1..7, including NavIC 1137. Wider than policyIsMsmType,
+// which stays at 1127 so stock filters do not silently change.
+inline bool policyIsMsmWide(uint16_t messageType) {
+  if (messageType < 1071 || messageType > 1137) return false;
+  const uint16_t sub = static_cast<uint16_t>(messageType % 10);
+  return sub >= 1 && sub <= 7;
+}
+
 inline bool policyIsMsm4Type(uint16_t messageType) {
   return policyIsMsmType(messageType) && (messageType % 10) == 4;
 }
