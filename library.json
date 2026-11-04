@@ -1,7 +1,7 @@
 ﻿{
     "name":  "TinyRTCM3",
     "version":  "0.6.0",
-    "description":  "Compact RTCM 3 assemble/CRC/decode/encode for ESP32 RTK pipelines. FrameQueue, per-type StreamStats, Onocoy coverage, RAM decode mask, 1005/1006/1033/1230 and MSM header. Optional peer to LC29H_GNSS; not an NTRIP caster.",
+    "description":  "Compact RTCM 3 assemble/CRC/decode/encode for ESP32 RTK pipelines. FrameQueue, per-type StreamStats, Onocoy coverage, RAM decode mask, 1005/1006/1033/1230 and MSM header. Independent of LC29H_GNSS; not an NTRIP caster.",
     "keywords":  "rtcm, gnss, rtk, ntrip, crc24q, esp32",
     "repository":  {
                        "type":  "git",

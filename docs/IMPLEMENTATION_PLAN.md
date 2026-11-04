@@ -183,3 +183,4 @@ MSM summary and table CRC may lag as v0.4 without blocking the v1 slice if ICD s
 | 2026-09-18 | 1006/1033 = synthetic-first (LC29H no TX) |
 | 2026-09-18 | Eph not a release gate |
 | 2026-09-18 | TinyRTCM3 remains optional peer to LC29H_GNSS |
+| 2026-11-03 | Superseded: TinyRTCM3 and LC29H_GNSS fully independent (no dependency either way; app wires them) |

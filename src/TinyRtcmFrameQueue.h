@@ -2,6 +2,11 @@
 // CAP-FRAMEQUEUE — fixed ring of whole RTCM3 frames. No heap on the hot path.
 // The app owns the queue object. This is not the UART byte ring (that stays in
 // the pump). pull() copies one head frame only when it fits the caller budget.
+//
+// THREAD SAFETY: FrameQueue has no internal locking. The caller must
+// serialize every call on one queue object (push, pull, clear, setConfig,
+// count/health/drop reads): either keep producer and consumer on the same task, or guard all
+// access with one mutex / critical section. Do not call it from an ISR.
 #include <stdint.h>
 #include <stddef.h>
 #include "TinyRtcmTypes.h"

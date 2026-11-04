@@ -15,19 +15,20 @@ Companion: [ARCHITECTURE.md](ARCHITECTURE.md) (ownership), [ICD.md](ICD.md) (API
 5. **Disruptive cuts are explicit milestones** — versioned, with a short migration note in the app repo.
 
 
-## 1a. Optional peer (hard rule)
+## 1a. Independent libraries (hard rule)
 
-TinyRTCM3 is an **optional peer library**, not a mandatory companion to LC29H_GNSS.
+TinyRTCM3 and LC29H_GNSS are **fully independent**. Neither depends on the other in either direction.
 
 | Rule | Meaning |
 |------|---------|
-| No required dependency | LC29H_GNSS `library.properties` / `library.json` / PlatformIO manifests **must not** list TinyRTCM3 as required |
-| Apps choose | Product firmware may use LC29H alone, TinyRTCM3 alone (bytes from any source), or both side-by-side |
-| Examples stay free | Existing LC29H_GNSS examples continue to build and run **without** TinyRTCM3 on the include path |
-| Optional only | Any LC29H helper/example that calls `tinyrtcm3::Hub` is behind an explicit opt-in (separate example, `#ifdef`, or docs-only sketch) |
-| No API hostage | LC29H public headers must not `#include` TinyRTCM3 or expose TinyRTCM3 types in required APIs |
+| No dependency either way | Neither library's `library.properties` / `library.json` / PlatformIO manifest lists the other |
+| No detection | Neither library uses `__has_include` or macros to detect the other; no class layout depends on the other's presence |
+| No shared types | Neither public API exposes the other's types (LC29H `UartPump` / `LC29H_Rtcm::Assembler` have no `setStreamStats()`) |
+| Single-library examples | Each library's examples use only that library. Sketches needing both live in the application repo |
+| App wires them | Product firmware pops whole CRC-checked frames from LC29H and passes them to TinyRTCM3 (FrameQueue, StreamStats, decode) |
+| Caller serializes | `FrameQueue` has no internal locking; push/pull/reads must be on one task or under one lock |
 
-Phases B–D below never change this rule: even after pump cutover in an **app**, the **LC29H_GNSS library package** remains usable without TinyRTCM3.
+Phases B-D below never change this rule.
 
 ## 2. Phase plan
 

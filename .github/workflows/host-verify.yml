@@ -6,6 +6,17 @@ on:
   pull_request:
 
 jobs:
+  independence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No LC29H_GNSS dependency in library sources or examples
+        shell: bash
+        run: |
+          if grep -rnE '#include *[<"]LC29H|LC29H_GNSS::|LC29H_UartPump|LC29H_Rtcm' src examples library.properties library.json; then
+            echo "TinyRTCM3 must not depend on LC29H_GNSS."
+            exit 1
+          fi
   self-tests:
     runs-on: ubuntu-latest
     steps:

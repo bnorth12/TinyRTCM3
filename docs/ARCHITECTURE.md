@@ -27,7 +27,7 @@ Transport pump (app or LC29H_GNSS UartPump)
 
 Quectel **PAIR/PQTM config** stays in LC29H_GNSS. TinyRTCM3 never opens a `HardwareSerial`.
 
-**Relationship:** TinyRTCM3 is an **optional peer** to LC29H_GNSS. Applications may use one, the other, or both. LC29H_GNSS must not require TinyRTCM3 to compile or run (see [INTEGRATION.md](INTEGRATION.md) §1a).
+**Relationship:** TinyRTCM3 and LC29H_GNSS are **fully independent**: no dependency in either direction, no `__has_include` detection, no conditional members. The application wires LC29H frames into TinyRTCM3 (see [INTEGRATION.md](INTEGRATION.md) §1a). `FrameQueue` has no internal locking; the caller serializes access.
 
 ## 2. Ownership contracts (locked)
 
@@ -139,7 +139,7 @@ never a requirement for Hub to carry that type.
 - Making Hub require a registered handler for every observed type
 - A mandatory `decodeAll()` that every application must link
 - Changing `feed()` frame layout or existing Status meanings to “fit” a new type
-- Breaking optional-peer rules (LC29H_GNSS must not gain a required dependency)
+- Breaking independence rules (no dependency between TinyRTCM3 and LC29H_GNSS in either direction)
 
 ### 5.5 Worked examples
 
