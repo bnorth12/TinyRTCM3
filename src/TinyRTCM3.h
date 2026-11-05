@@ -1,6 +1,7 @@
 #pragma once
 // TinyRTCM3 — public umbrella. Prefer this include from sketches.
 // Capability/requirement matrix: TinyRtcmRequirements.h + docs/ICD.md
+#include "TinyRtcmVersion.h"
 #include "TinyRtcmTypes.h"
 #include "TinyRtcmRequirements.h"
 #include "TinyRtcmCrc24q.h"
