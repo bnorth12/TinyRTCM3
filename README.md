@@ -9,11 +9,13 @@ This library is **not** a Quectel config driver â€” keep that in [LC29H_GNS
 
 **Independent library:** TinyRTCM3 and [LC29H_GNSS](https://github.com/bnorth12/LC29H_GNSS-Library) do not depend on each other in either direction. Neither includes the other, and each library's examples use only that library. Applications that use both (for example the ESP32-S3 LC29H base station) wire LC29H output frames into TinyRTCM3 in app code.
 
+Consumers can pin a minimum with `TINYRTCM3_VERSION_*` macros in `TinyRtcmVersion.h` (included from the public umbrella).
+
 **Plan:** [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 
 **Contracts:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (ownership) Â· [docs/INTEGRATION.md](docs/INTEGRATION.md) (phased app/GNSS impact) Â· [docs/ICD.md](docs/ICD.md).
 
-## Status (v0.6.0)
+## Status (v0.6.2)
 
 v0.6 adds a fixed whole-frame `FrameQueue` (not a UART byte ring), a 48-row per-type stats table updated only on CRC-pass, Onocoy required-set coverage (missing/late), and a RAM-only decode mask (default off) with views for 1005/1006, 1033, MSM headers, and 1230. Same-type 1005/1006/1230 replacements do not mark the queue unhealthy. MSM pressure drops a whole epoch. The library stays independent of LC29H_GNSS.
 
